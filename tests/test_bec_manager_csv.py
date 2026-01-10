@@ -131,3 +131,132 @@ class TestBECManagerCSV:
         with patch("csv.DictReader", side_effect=Exception("Unexpected boom")):
             with pytest.raises(Exception, match="Unexpected boom"):
                 BECManager.load_from_csv(csv_file)
+
+    def test_load_from_csv_real_world_complex(self, tmp_path: Any) -> None:
+        """
+        Comprehensive test simulating a real-world scenario (Story A/B/C).
+        Includes multiple rows, mock tool outputs, complex context, and file references.
+        """
+        corpus_id = str(uuid4())
+        csv_file = tmp_path / "real_world.csv"
+
+        headers = [
+            "corpus_id",
+            "prompt",
+            "files",
+            "context",
+            "tool_outputs",
+            "expected_text",
+            "expected_reasoning",
+            "tool_mocks",
+            "forbidden_content",
+        ]
+
+        # Row 1: Protocol Analyzer (Story A)
+        row1 = [
+            corpus_id,
+            "Analyze protocol",
+            json.dumps(["s3://bucket/protocol.pdf"]),
+            json.dumps({"user_role": "auditor"}),
+            json.dumps({}),
+            "Protocol Approved",
+            json.dumps(["Check Header", "Check Signature"]),
+            json.dumps({}),
+            json.dumps(["Error", "Warning"]),
+        ]
+
+        # Row 2: Database Down Mock (Story B)
+        row2 = [
+            corpus_id,
+            "Query PatientDB",
+            json.dumps([]),
+            json.dumps({}),
+            json.dumps({}),
+            "System unavailable",
+            json.dumps([]),
+            json.dumps({"PatientDB": {"error": "503 Service Unavailable"}}),
+            json.dumps([]),
+        ]
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerow(row1)
+            writer.writerow(row2)
+
+        cases = BECManager.load_from_csv(csv_file)
+
+        assert len(cases) == 2
+
+        # Verify Row 1
+        c1 = cases[0]
+        assert c1.inputs.prompt == "Analyze protocol"
+        assert c1.inputs.files == ["s3://bucket/protocol.pdf"]
+        assert c1.inputs.context["user_role"] == "auditor"
+        assert c1.expectations.reasoning == ["Check Header", "Check Signature"]
+        assert "Error" in c1.expectations.forbidden_content
+
+        # Verify Row 2
+        c2 = cases[1]
+        assert c2.inputs.prompt == "Query PatientDB"
+        assert c2.expectations.tool_mocks["PatientDB"]["error"] == "503 Service Unavailable"
+
+    def test_load_from_csv_edge_cases(self, tmp_path: Any) -> None:
+        """
+        Test various edge cases:
+        - Extra columns (should be ignored)
+        - Empty/Blank JSON fields (should default correctly)
+        - Whitespace in headers (DictReader handles this if keys match exactly, but stripped CSVs are common)
+        """
+        corpus_id = str(uuid4())
+        csv_file = tmp_path / "edge_cases.csv"
+
+        # 'extra_col' should be ignored
+        headers = ["corpus_id", "prompt", "extra_col", "files", "expected_structure"]
+        row = [
+            corpus_id,
+            "Prompt",
+            "IgnoreMe",
+            "",  # Empty files string -> should become []
+            "",  # Empty structure string -> should become None
+        ]
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerow(row)
+
+        cases = BECManager.load_from_csv(csv_file)
+        assert len(cases) == 1
+        assert cases[0].inputs.files == []
+        assert cases[0].expectations.structure is None
+        # Verify strict validation didn't complain about extra_col because we use row.get()
+
+    def test_load_from_csv_empty_file(self, tmp_path: Any) -> None:
+        """Test loading a CSV with only headers (empty)."""
+        csv_file = tmp_path / "empty.csv"
+        headers = ["corpus_id", "prompt"]
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+
+        cases = BECManager.load_from_csv(csv_file)
+        assert len(cases) == 0
+
+    def test_load_from_csv_json_type_mismatch(self, tmp_path: Any) -> None:
+        """Test that valid JSON but wrong Type (Dict vs List) raises ValidationError."""
+        corpus_id = str(uuid4())
+        csv_file = tmp_path / "bad_type.csv"
+
+        headers = ["corpus_id", "prompt", "files"]
+        # files expects List[str], but we give Dict
+        row = [corpus_id, "Prompt", json.dumps({"not": "a list"})]
+
+        with open(csv_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)
+            writer.writerow(row)
+
+        with pytest.raises(ValidationError):
+            BECManager.load_from_csv(csv_file)
