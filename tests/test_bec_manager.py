@@ -106,3 +106,74 @@ class TestBECManager:
         with patch("pathlib.Path.open", side_effect=Exception("Unexpected boom")):
             with pytest.raises(Exception, match="Unexpected boom"):
                 BECManager.load_from_jsonl(file_path)
+
+    def test_load_from_jsonl_complex_nested_unicode(self, tmp_path: Any, valid_test_case_dict: Dict[str, Any]) -> None:
+        """
+        Test that deeply nested structures and Unicode characters are handled correctly.
+        """
+        complex_context = {
+            "user": {
+                "profile": {"name": "Jules 🧙‍♂️", "roles": ["admin", "wizard"]},
+                "history": [{"id": 1, "action": "login"}, {"id": 2, "action": "cast_spell"}],
+            },
+            "meta": {"source": "S3", "version": 1.0},
+        }
+
+        valid_test_case_dict["inputs"]["context"] = complex_context
+        valid_test_case_dict["inputs"]["prompt"] = "Translate: 你好, World! 🌍"
+
+        file_path = tmp_path / "complex.jsonl"
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(json.dumps(valid_test_case_dict, ensure_ascii=False) + "\n")
+
+        cases = BECManager.load_from_jsonl(file_path)
+        assert len(cases) == 1
+        loaded_case = cases[0]
+
+        # Verify Unicode
+        assert loaded_case.inputs.prompt == "Translate: 你好, World! 🌍"
+        assert loaded_case.inputs.context["user"]["profile"]["name"] == "Jules 🧙‍♂️"
+
+        # Verify Nesting
+        assert loaded_case.inputs.context["user"]["history"][1]["action"] == "cast_spell"
+
+    def test_load_from_jsonl_extra_fields(self, tmp_path: Any, valid_test_case_dict: Dict[str, Any]) -> None:
+        """
+        Test that extra fields in the JSON are ignored (resilience).
+        """
+        valid_test_case_dict["inputs"]["extra_field"] = "Should be ignored"
+        valid_test_case_dict["unknown_root_field"] = 12345
+
+        file_path = tmp_path / "extra_fields.jsonl"
+        with open(file_path, "w") as f:
+            f.write(json.dumps(valid_test_case_dict) + "\n")
+
+        cases = BECManager.load_from_jsonl(file_path)
+        assert len(cases) == 1
+        # Pydantic (by default) ignores extra fields, so this should not raise ValidationError
+        # and the extra fields should not be present in the model if we inspected `model_dump()`.
+
+        dumped = cases[0].model_dump()
+        assert "unknown_root_field" not in dumped
+        # Note: TestCaseInput might store extra fields if configured to Allow, but default is Ignore.
+        # Let's verify inputs
+        inputs_dump = cases[0].inputs.model_dump()
+        assert "extra_field" not in inputs_dump
+
+    def test_load_from_jsonl_explicit_nulls(self, tmp_path: Any, valid_test_case_dict: Dict[str, Any]) -> None:
+        """
+        Test that explicit 'null' values in JSON are correctly handled for Optional fields.
+        """
+        # Set optional fields to null
+        valid_test_case_dict["expectations"]["text"] = None
+        valid_test_case_dict["expectations"]["schema_id"] = None
+
+        file_path = tmp_path / "nulls.jsonl"
+        with open(file_path, "w") as f:
+            f.write(json.dumps(valid_test_case_dict) + "\n")
+
+        cases = BECManager.load_from_jsonl(file_path)
+        assert len(cases) == 1
+        expectations = cases[0].expectations
+        assert expectations.text is None
+        assert expectations.schema_id is None
