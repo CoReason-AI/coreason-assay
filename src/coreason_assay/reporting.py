@@ -8,7 +8,8 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
-from typing import Dict, List
+import math
+from typing import Dict, List, Union
 
 from coreason_assay.models import AggregateMetric, ReportCard, TestResult, TestRun
 
@@ -36,10 +37,19 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
 
     aggregates: List[AggregateMetric] = []
 
+    # Helper to clean values
+    def is_valid_number(n: Union[float, int]) -> bool:
+        return isinstance(n, (int, float)) and not math.isnan(n) and not math.isinf(n)
+
     # 1. Global Latency Aggregate (Raw Execution Time)
-    latencies: List[float] = [
-        float(r.metrics["latency_ms"]) for r in results if r.metrics.get("latency_ms") is not None
-    ]
+    latencies: List[float] = []
+    for r in results:
+        l_ms = r.metrics.get("latency_ms")
+        if l_ms is not None:
+            val = float(l_ms)
+            if is_valid_number(val):
+                latencies.append(val)
+
     if latencies:
         avg_latency = sum(latencies) / len(latencies)
         aggregates.append(
@@ -61,22 +71,25 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
             if isinstance(val, bool):
                 val = 1.0 if val else 0.0
 
-            # Ensure we handle numeric conversion safely
+            # Ensure we handle numeric conversion safely and filter nan/inf
             if isinstance(val, (int, float)):
-                if score.name not in score_groups:
-                    score_groups[score.name] = []
-                score_groups[score.name].append(float(val))
+                f_val = float(val)
+                if is_valid_number(f_val):
+                    if score.name not in score_groups:
+                        score_groups[score.name] = []
+                    score_groups[score.name].append(f_val)
 
     for name, values in score_groups.items():
-        avg_val = sum(values) / len(values)
-        aggregates.append(
-            AggregateMetric(
-                name=f"Average {name} Score",
-                value=avg_val,
-                unit="score",
-                total_samples=len(values),
+        if values:
+            avg_val = sum(values) / len(values)
+            aggregates.append(
+                AggregateMetric(
+                    name=f"Average {name} Score",
+                    value=avg_val,
+                    unit="score",
+                    total_samples=len(values),
+                )
             )
-        )
 
     return ReportCard(
         run_id=run.id,
