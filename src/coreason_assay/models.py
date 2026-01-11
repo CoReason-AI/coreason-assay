@@ -97,7 +97,7 @@ class TestResultOutput(BaseModel):
 
     text: Optional[str] = Field(None, description="The final text response.")
     trace: Optional[str] = Field(None, description="The execution trace/log.")
-    structured_output: Optional[Dict[str, Any]] = Field(None, description="The structured output (if any).")
+    structured_output: Optional[Any] = Field(None, description="The structured output (if any).")
 
 
 class Score(BaseModel):

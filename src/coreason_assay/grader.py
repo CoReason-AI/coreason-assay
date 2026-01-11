@@ -92,6 +92,14 @@ class JsonSchemaGrader(BaseGrader):
         expected_structure = expectations.get("structure") if expectations else None
 
         if expected_structure:
+            if not isinstance(structured_output, dict):
+                return Score(
+                    name="JsonSchema",
+                    value=0,
+                    passed=False,
+                    reasoning=f"Expected a dictionary for structured output, got {type(structured_output).__name__}.",
+                )
+
             # Simple key presence check for this iteration
             missing_keys = [k for k in expected_structure.keys() if k not in structured_output]
             if missing_keys:
