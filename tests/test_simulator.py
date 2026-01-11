@@ -87,9 +87,11 @@ def test_simulator_run_case_success(sample_test_case: TestCase) -> None:
     assert result.actual_output.trace == "Mock trace"
     assert result.actual_output.structured_output == {"key": "value"}
 
-    # Latency check (should be > 0)
-    assert "latency_ms" in result.scores
-    assert result.scores["latency_ms"] >= 0
+    # Latency check (should be in metrics now)
+    assert "latency_ms" in result.metrics
+    assert result.metrics["latency_ms"] >= 0
+    # Scores should be empty
+    assert result.scores == []
 
 
 def test_simulator_run_case_exception(sample_test_case: TestCase) -> None:
@@ -108,4 +110,4 @@ def test_simulator_run_case_exception(sample_test_case: TestCase) -> None:
     assert "Simulated agent failure" in result.actual_output.trace
 
     # Latency should still be captured
-    assert "latency_ms" in result.scores
+    assert "latency_ms" in result.metrics
