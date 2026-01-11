@@ -115,10 +115,10 @@ def test_simulator_slow_execution(base_test_case: TestCase) -> None:
     result = asyncio.run(simulator.run_case(base_test_case, run_id))
 
     # Latency should be at least the delay
-    assert "latency_ms" in result.scores
-    assert result.scores["latency_ms"] >= delay * 1000
+    assert "latency_ms" in result.metrics
+    assert result.metrics["latency_ms"] >= delay * 1000
     # Allow some overhead buffer (e.g., should be less than delay + 500ms)
-    assert result.scores["latency_ms"] < (delay * 1000) + 500
+    assert result.metrics["latency_ms"] < (delay * 1000) + 500
 
 
 def test_simulator_very_fast_execution(base_test_case: TestCase) -> None:
@@ -129,8 +129,8 @@ def test_simulator_very_fast_execution(base_test_case: TestCase) -> None:
 
     result = asyncio.run(simulator.run_case(base_test_case, run_id))
 
-    assert "latency_ms" in result.scores
-    assert result.scores["latency_ms"] >= 0
+    assert "latency_ms" in result.metrics
+    assert result.metrics["latency_ms"] >= 0
 
 
 def test_simulator_runner_returns_none_fields(base_test_case: TestCase) -> None:

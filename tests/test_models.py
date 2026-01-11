@@ -14,6 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from coreason_assay.models import (
+    Score,
     TestCase,
     TestCaseExpectation,
     TestCaseInput,
@@ -59,14 +60,16 @@ class TestModels:
         run_id = uuid4()
         case_id = uuid4()
         output = TestResultOutput(text="Response", trace="Log trace", structured_output=None)
+        score = Score(name="accuracy", value=1.0, passed=True, reasoning="Perfect match")
 
-        result = TestResult(run_id=run_id, case_id=case_id, actual_output=output, passed=True, scores={"accuracy": 1.0})
+        result = TestResult(run_id=run_id, case_id=case_id, actual_output=output, passed=True, scores=[score])
 
         assert result.run_id == run_id
         assert result.case_id == case_id
         assert result.actual_output.text == "Response"
         assert result.passed is True
-        assert result.scores["accuracy"] == 1.0
+        assert result.scores[0].name == "accuracy"
+        assert result.scores[0].value == 1.0
 
     def test_validation_error(self) -> None:
         with pytest.raises(ValidationError):

@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from pydantic import BaseModel, Field
@@ -100,6 +100,18 @@ class TestResultOutput(BaseModel):
     structured_output: Optional[Dict[str, Any]] = Field(None, description="The structured output (if any).")
 
 
+class Score(BaseModel):
+    """
+    Represents a score for a specific dimension (e.g., Latency, Faithfulness).
+    """
+
+    name: str = Field(..., description="Name of the scoring dimension (e.g., 'Latency').")
+    value: Union[float, int, bool] = Field(..., description="The quantitative score.")
+    max_value: float = Field(default=1.0, description="The maximum possible value for this score.")
+    passed: bool = Field(..., description="Whether this specific dimension passed.")
+    reasoning: Optional[str] = Field(None, description="Explanation for the score.")
+
+
 class TestResult(BaseModel):
     """
     The result of running a single TestCase.
@@ -109,7 +121,8 @@ class TestResult(BaseModel):
     run_id: UUID = Field(..., description="ID of the parent TestRun.")
     case_id: UUID = Field(..., description="ID of the TestCase.")
     actual_output: TestResultOutput = Field(..., description="The actual output from the agent.")
-    scores: Dict[str, Any] = Field(
-        default_factory=dict, description="Scores map (e.g., {'faithfulness': 0.9, 'latency': 400})."
+    metrics: Dict[str, Any] = Field(
+        default_factory=dict, description="Raw execution metrics (e.g., latency_ms, tokens)."
     )
+    scores: List[Score] = Field(default_factory=list, description="List of graded scores.")
     passed: bool = Field(..., description="Whether the test passed based on criteria.")
