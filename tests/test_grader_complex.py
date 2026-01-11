@@ -89,3 +89,135 @@ def test_json_schema_grader_non_dict_output() -> None:
 
     assert score.passed is False
     assert score.reasoning is not None and "Validation failed" in score.reasoning
+
+
+def test_json_schema_grader_strict_properties(complex_mock_result: TestResult) -> None:
+    # Output is {"key": "value", "extra": "data"}
+    # Expectation: No extra properties allowed
+    grader = JsonSchemaGrader()
+    schema = {
+        "type": "object",
+        "properties": {"key": {"type": "string"}},
+        "required": ["key"],
+        "additionalProperties": False,
+    }
+    score = grader.grade(complex_mock_result, expectations={"structure": schema})
+
+    assert score.passed is False
+    assert score.reasoning is not None and "Validation failed" in score.reasoning
+    # The error message should ideally mention 'extra' property is unexpected
+
+
+def test_json_schema_grader_array_validation() -> None:
+    # Output is a list of objects
+    result = TestResult(
+        run_id=uuid4(),
+        case_id=uuid4(),
+        actual_output=TestResultOutput(
+            text="list",
+            trace="log",
+            structured_output=[
+                {"id": 1, "name": "A"},
+                {"id": 2, "name": "B"},
+            ],
+        ),
+        metrics={},
+        passed=False,
+    )
+
+    grader = JsonSchemaGrader()
+    schema = {
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {"id": {"type": "integer"}, "name": {"type": "string"}},
+            "required": ["id", "name"],
+        },
+    }
+    score = grader.grade(result, expectations={"structure": schema})
+
+    assert score.passed is True
+
+
+def test_json_schema_grader_pattern_validation() -> None:
+    result = TestResult(
+        run_id=uuid4(),
+        case_id=uuid4(),
+        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"email": "invalid-email"}),
+        metrics={},
+        passed=False,
+    )
+
+    grader = JsonSchemaGrader()
+    # Simple regex for testing pattern validation
+    schema = {
+        "type": "object",
+        "properties": {"email": {"type": "string", "pattern": "^\\S+@\\S+\\.\\S+$"}},
+    }
+    score = grader.grade(result, expectations={"structure": schema})
+
+    assert score.passed is False
+    assert score.reasoning is not None and "Validation failed" in score.reasoning
+
+
+def test_json_schema_grader_deep_nested_error() -> None:
+    result = TestResult(
+        run_id=uuid4(),
+        case_id=uuid4(),
+        actual_output=TestResultOutput(
+            text="foo",
+            trace="log",
+            structured_output={
+                "level1": {
+                    "level2": {
+                        "level3": "wrong_type"  # Should be integer
+                    }
+                }
+            },
+        ),
+        metrics={},
+        passed=False,
+    )
+
+    grader = JsonSchemaGrader()
+    schema = {
+        "type": "object",
+        "properties": {
+            "level1": {
+                "type": "object",
+                "properties": {
+                    "level2": {
+                        "type": "object",
+                        "properties": {"level3": {"type": "integer"}},
+                    }
+                },
+            }
+        },
+    }
+    score = grader.grade(result, expectations={"structure": schema})
+
+    assert score.passed is False
+    assert score.reasoning is not None and "Validation failed" in score.reasoning
+    # jsonschema usually gives a clear message.
+    # We might not get the full path in e.message unless we traverse e.path,
+    # but e.message usually says " 'wrong_type' is not of type 'integer' "
+
+
+def test_json_schema_grader_nullable_fields() -> None:
+    result = TestResult(
+        run_id=uuid4(),
+        case_id=uuid4(),
+        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"optional_field": None}),
+        metrics={},
+        passed=False,
+    )
+
+    grader = JsonSchemaGrader()
+    schema = {
+        "type": "object",
+        "properties": {"optional_field": {"type": ["string", "null"]}},
+        "required": ["optional_field"],
+    }
+    score = grader.grade(result, expectations={"structure": schema})
+
+    assert score.passed is True
