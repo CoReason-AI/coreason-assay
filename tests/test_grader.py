@@ -21,9 +21,13 @@ def mock_result() -> TestResult:
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"key": "value"}),
+        actual_output=TestResultOutput(
+            text="foo",
+            trace="log",
+            structured_output={"key": "value"}
+        ),
         metrics={"latency_ms": 1000.0},
-        passed=False,
+        passed=False
     )
 
 
@@ -49,13 +53,23 @@ def test_latency_grader_fail(mock_result: TestResult) -> None:
     assert score.reasoning is not None and "exceeds" in score.reasoning
 
 
+def test_latency_grader_expectations_override(mock_result: TestResult) -> None:
+    # Default is 5000ms, override to 500ms in expectations
+    grader = LatencyGrader(threshold_ms=5000.0)
+    score = grader.grade(mock_result, expectations={"latency_threshold_ms": 500.0})
+
+    assert score.passed is False
+    assert score.max_value == 500.0
+    assert score.reasoning is not None and "exceeds" in score.reasoning
+
+
 def test_latency_grader_missing_metric() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
         actual_output=TestResultOutput(text="foo", trace="log", structured_output=None),
         metrics={},
-        passed=False,
+        passed=False
     )
     grader = LatencyGrader()
     score = grader.grade(result)
@@ -93,7 +107,7 @@ def test_json_schema_grader_no_output() -> None:
         case_id=uuid4(),
         actual_output=TestResultOutput(text="foo", trace="log", structured_output=None),
         metrics={},
-        passed=False,
+        passed=False
     )
     grader = JsonSchemaGrader()
     score = grader.grade(result)

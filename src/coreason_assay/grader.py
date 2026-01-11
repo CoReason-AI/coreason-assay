@@ -31,7 +31,7 @@ class BaseGrader(ABC):
                           (e.g., specific schema ID, custom threshold).
                           If not provided, the grader may use defaults or data from result.
         """
-        pass
+        pass  # pragma: no cover
 
 
 class LatencyGrader(BaseGrader):
