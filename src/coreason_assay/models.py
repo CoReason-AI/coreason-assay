@@ -8,6 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
@@ -126,3 +127,35 @@ class TestResult(BaseModel):
     )
     scores: List[Score] = Field(default_factory=list, description="List of graded scores.")
     passed: bool = Field(..., description="Whether the test passed based on criteria.")
+
+
+class AggregateMetric(BaseModel):
+    """
+    Aggregated metric from a TestRun (e.g., Average Latency, Pass Rate).
+    """
+
+    name: str = Field(..., description="Name of the metric (e.g., 'Average Latency').")
+    value: float = Field(..., description="The calculated aggregate value.")
+    unit: Optional[str] = Field(None, description="Unit of measurement (e.g., 'ms', '%').")
+    total_samples: int = Field(..., description="Number of data points included in this aggregate.")
+
+
+class ReportCard(BaseModel):
+    """
+    The persistent result set summarizing a TestRun.
+    """
+
+    id: UUID = Field(default_factory=uuid4, description="Unique identifier for the report card.")
+    run_id: UUID = Field(..., description="ID of the TestRun this report belongs to.")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of generation."
+    )
+
+    # High-level stats
+    total_cases: int = Field(..., description="Total number of test cases in the run.")
+    passed_cases: int = Field(..., description="Number of cases that passed.")
+    failed_cases: int = Field(..., description="Number of cases that failed.")
+    pass_rate: float = Field(..., description="Global pass rate (0.0 to 1.0).")
+
+    # Granular aggregates
+    aggregates: List[AggregateMetric] = Field(default_factory=list, description="List of aggregated metrics.")
