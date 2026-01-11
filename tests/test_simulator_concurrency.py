@@ -14,7 +14,6 @@ from typing import Any, Dict
 from uuid import uuid4
 
 import pytest
-
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -188,5 +187,49 @@ async def test_run_suite_empty_corpus() -> None:
 
     test_run, results = await simulator.run_suite(empty_corpus, agent_draft_version="v1")
 
+    assert len(results) == 0
+    assert test_run.status == TestRunStatus.DONE
+
+
+@pytest.mark.asyncio
+async def test_run_suite_on_progress_error(basic_corpus: TestCorpus) -> None:
+    """
+    Verifies that the run continues if the progress callback raises an exception.
+    """
+    runner = AsyncSleepAgentRunner(delay_s=0.01)
+    simulator = Simulator(runner)
+
+    async def on_progress_raising(completed: int, total: int, last_result: Any) -> None:
+        raise RuntimeError("Callback Failed")
+
+    test_run, results = await simulator.run_suite(
+        basic_corpus, agent_draft_version="0.0.1", on_progress=on_progress_raising
+    )
+
+    # Should complete all cases despite callback errors
+    assert len(results) == 3
+    assert test_run.status == TestRunStatus.DONE
+
+
+@pytest.mark.asyncio
+async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker: Any) -> None:
+    """
+    Verifies the ultimate fail-safe where run_case itself (or the future) raises an unhandled exception.
+    This simulates a failure in the task scheduling or a bug in run_case's own exception handling.
+    """
+    runner = AsyncSleepAgentRunner(delay_s=0.01)
+    simulator = Simulator(runner)
+
+    # Mock run_case to raise an exception *directly*, not returning a failed result.
+    # This simulates a crash that bypasses run_case's internal try/except block
+    # (e.g. if the method definition itself was somehow broken or asyncio failed).
+    # Since run_case is async, side_effect needs to raise.
+    mocker.patch.object(simulator, "run_case", side_effect=RuntimeError("Catastrophic Failure"))
+
+    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
+
+    # The fail-safe catches the error and continues.
+    # Since all tasks failed critically, results should be empty.
+    # In a real scenario, this would be logged as critical.
     assert len(results) == 0
     assert test_run.status == TestRunStatus.DONE
