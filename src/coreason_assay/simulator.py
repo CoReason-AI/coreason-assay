@@ -64,11 +64,13 @@ class Simulator:
 
         # Construct the result
         # Note: Scores are empty for now, will be filled by Grader later.
+        # We store raw latency in metrics.
         result = TestResult(
             run_id=run_id,
             case_id=case.id,
             actual_output=output,
-            scores={"latency_ms": latency_ms},  # Capture raw latency as a score for now
+            metrics={"latency_ms": latency_ms},
+            scores=[],
             passed=False,  # Default to False until graded
         )
 
