@@ -11,6 +11,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
+from jsonschema import SchemaError, ValidationError, validate
+
 from coreason_assay.models import Score, TestResult
 
 
@@ -68,16 +70,11 @@ class LatencyGrader(BaseGrader):
 
 class JsonSchemaGrader(BaseGrader):
     """
-    Grades whether the output matches the expected structure.
-    For this iteration, checks if structured_output is present and valid.
+    Grades whether the output matches the expected JSON schema.
     """
 
     def grade(self, result: TestResult, expectations: Optional[Dict[str, Any]] = None) -> Score:
         structured_output = result.actual_output.structured_output
-
-        # If we expect structure (from global expectations or TestCase expectations)
-        # Note: In a real integration, we'd pass the TestCase's expectations here.
-        # For now, we assume if this grader is called, structure is desired.
 
         if structured_output is None:
             return Score(
@@ -87,32 +84,40 @@ class JsonSchemaGrader(BaseGrader):
                 reasoning="No structured output produced.",
             )
 
-        # In a full implementation, we would validate against a schema.
-        # Here we check if the expected keys (if provided) exist.
-        expected_structure = expectations.get("structure") if expectations else None
+        # Retrieve the expected schema from expectations
+        # We look for 'structure' as the schema definition
+        expected_schema = expectations.get("structure") if expectations else None
 
-        if expected_structure:
-            if not isinstance(structured_output, dict):
-                return Score(
-                    name="JsonSchema",
-                    value=0,
-                    passed=False,
-                    reasoning=f"Expected a dictionary for structured output, got {type(structured_output).__name__}.",
-                )
+        if not expected_schema:
+            # If no schema is provided, we default to passing if structured_output exists
+            # This matches the previous behavior where we just checked presence if no expectations
+            return Score(
+                name="JsonSchema",
+                value=1,
+                passed=True,
+                reasoning="Structured output present (no schema provided for validation).",
+            )
 
-            # Simple key presence check for this iteration
-            missing_keys = [k for k in expected_structure.keys() if k not in structured_output]
-            if missing_keys:
-                return Score(
-                    name="JsonSchema",
-                    value=0,
-                    passed=False,
-                    reasoning=f"Missing keys in structured output: {missing_keys}",
-                )
+        try:
+            validate(instance=structured_output, schema=expected_schema)
+        except ValidationError as e:
+            return Score(
+                name="JsonSchema",
+                value=0,
+                passed=False,
+                reasoning=f"Validation failed: {e.message}",
+            )
+        except SchemaError as e:
+            return Score(
+                name="JsonSchema",
+                value=0,
+                passed=False,
+                reasoning=f"Invalid JSON Schema provided in expectations: {e.message}",
+            )
 
         return Score(
             name="JsonSchema",
             value=1,
             passed=True,
-            reasoning="Structured output present and matches expectations.",
+            reasoning="Structured output matches the expected JSON schema.",
         )

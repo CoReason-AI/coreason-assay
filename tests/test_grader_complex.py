@@ -49,7 +49,7 @@ def test_latency_grader_zero_threshold(complex_mock_result: TestResult) -> None:
 
 def test_json_schema_grader_empty_structures(complex_mock_result: TestResult) -> None:
     # Output is {"key": "value", ...}
-    # Expectation is {} (no specific keys required)
+    # Expectation is {} (no specific keys required) - Valid JSON Schema (empty schema accepts anything)
     grader = JsonSchemaGrader()
     score = grader.grade(complex_mock_result, expectations={"structure": {}})
 
@@ -58,12 +58,13 @@ def test_json_schema_grader_empty_structures(complex_mock_result: TestResult) ->
 
 def test_json_schema_grader_extra_keys(complex_mock_result: TestResult) -> None:
     # Output is {"key": "value", "extra": "data"}
-    # Expectation is {"key": "any"}
+    # Expectation is {"type": "object", "required": ["key"]} (JSON Schema)
     grader = JsonSchemaGrader()
-    score = grader.grade(complex_mock_result, expectations={"structure": {"key": "any"}})
+    schema = {"type": "object", "required": ["key"]}
+    score = grader.grade(complex_mock_result, expectations={"structure": schema})
 
     assert score.passed is True
-    # "extra" key is ignored
+    # "extra" key is allowed by default in JSON schema
 
 
 def test_json_schema_grader_non_dict_output() -> None:
@@ -74,7 +75,7 @@ def test_json_schema_grader_non_dict_output() -> None:
         actual_output=TestResultOutput(
             text="foo",
             trace="log",
-            # Invalid type for structured output when expecting a schema
+            # Output is a list
             structured_output=["item1", "item2"],
         ),
         metrics={},
@@ -82,9 +83,9 @@ def test_json_schema_grader_non_dict_output() -> None:
     )
 
     grader = JsonSchemaGrader()
-    # We expect some structure (which implies we expect a dict)
-    score = grader.grade(result, expectations={"structure": {"key": "any"}})
+    # Expectation is an object
+    schema = {"type": "object"}
+    score = grader.grade(result, expectations={"structure": schema})
 
     assert score.passed is False
-    assert score.reasoning is not None and "Expected a dictionary" in score.reasoning
-    assert score.reasoning is not None and "list" in score.reasoning
+    assert score.reasoning is not None and "Validation failed" in score.reasoning
