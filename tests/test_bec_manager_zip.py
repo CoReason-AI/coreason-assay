@@ -14,6 +14,7 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Generator
 from uuid import uuid4
 
 import pytest
@@ -23,18 +24,18 @@ from coreason_assay.bec_manager import BECManager
 
 class TestBECManagerZip:
     @pytest.fixture
-    def temp_dir(self):
+    def temp_dir(self) -> Generator[Path, None, None]:
         d = tempfile.mkdtemp()
         yield Path(d)
         shutil.rmtree(d)
 
     @pytest.fixture
-    def dummy_pdf(self, temp_dir):
+    def dummy_pdf(self, temp_dir: Path) -> Path:
         p = temp_dir / "protocol.pdf"
         p.write_bytes(b"%PDF-1.4 dummy content")
         return p
 
-    def create_csv_manifest(self, path: Path, file_ref: str = "protocol.pdf"):
+    def create_csv_manifest(self, path: Path, file_ref: str = "protocol.pdf") -> None:
         with path.open("w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["corpus_id", "prompt", "files", "expected_text"])
             writer.writeheader()
@@ -47,7 +48,7 @@ class TestBECManagerZip:
                 }
             )
 
-    def create_jsonl_manifest(self, path: Path, file_ref: str = "protocol.pdf"):
+    def create_jsonl_manifest(self, path: Path, file_ref: str = "protocol.pdf") -> None:
         data = {
             "corpus_id": str(uuid4()),
             "inputs": {"prompt": "Analyze this.", "files": [file_ref]},
@@ -56,7 +57,7 @@ class TestBECManagerZip:
         with path.open("w") as f:
             f.write(json.dumps(data) + "\n")
 
-    def test_load_valid_zip_csv(self, temp_dir, dummy_pdf):
+    def test_load_valid_zip_csv(self, temp_dir: Path, dummy_pdf: Path) -> None:
         # Create manifest
         manifest_path = temp_dir / "manifest.csv"
         self.create_csv_manifest(manifest_path, file_ref="protocol.pdf")
@@ -82,7 +83,7 @@ class TestBECManagerZip:
         assert resolved_file.name == "protocol.pdf"
         assert resolved_file.parent == extract_dir
 
-    def test_load_valid_zip_jsonl(self, temp_dir, dummy_pdf):
+    def test_load_valid_zip_jsonl(self, temp_dir: Path, dummy_pdf: Path) -> None:
         manifest_path = temp_dir / "manifest.jsonl"
         self.create_jsonl_manifest(manifest_path, file_ref="protocol.pdf")
 
@@ -98,7 +99,7 @@ class TestBECManagerZip:
         assert len(cases) == 1
         assert cases[0].inputs.files[0].endswith("protocol.pdf")
 
-    def test_zip_missing_manifest(self, temp_dir, dummy_pdf):
+    def test_zip_missing_manifest(self, temp_dir: Path, dummy_pdf: Path) -> None:
         zip_path = temp_dir / "no_manifest.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.write(dummy_pdf, arcname="protocol.pdf")
@@ -109,7 +110,7 @@ class TestBECManagerZip:
         with pytest.raises(ValueError, match="No manifest file"):
             BECManager.load_from_zip(zip_path, extract_dir)
 
-    def test_zip_multiple_manifests(self, temp_dir):
+    def test_zip_multiple_manifests(self, temp_dir: Path) -> None:
         zip_path = temp_dir / "multi.zip"
         with zipfile.ZipFile(zip_path, "w") as zf:
             zf.writestr("a.csv", "header\n")
@@ -121,7 +122,7 @@ class TestBECManagerZip:
         with pytest.raises(ValueError, match="Ambiguous ZIP content"):
             BECManager.load_from_zip(zip_path, extract_dir)
 
-    def test_zip_missing_asset(self, temp_dir):
+    def test_zip_missing_asset(self, temp_dir: Path) -> None:
         # Manifest refers to missing.pdf
         manifest_path = temp_dir / "manifest.csv"
         self.create_csv_manifest(manifest_path, file_ref="missing.pdf")
@@ -136,7 +137,7 @@ class TestBECManagerZip:
         with pytest.raises(FileNotFoundError, match="Referenced asset not found"):
             BECManager.load_from_zip(zip_path, extract_dir)
 
-    def test_zip_security_traversal(self, temp_dir, dummy_pdf):
+    def test_zip_security_traversal(self, temp_dir: Path, dummy_pdf: Path) -> None:
         # Manifest refers to ../protocol.pdf
         manifest_path = temp_dir / "manifest.csv"
         self.create_csv_manifest(manifest_path, file_ref="../protocol.pdf")
@@ -165,7 +166,7 @@ class TestBECManagerZip:
         with pytest.raises(ValueError, match="Security Error"):
             BECManager.load_from_zip(zip_path_2, extract_dir)
 
-    def test_zip_nested_folder_structure(self, temp_dir, dummy_pdf):
+    def test_zip_nested_folder_structure(self, temp_dir: Path, dummy_pdf: Path) -> None:
         # ZIP Structure:
         # /root
         #   /data

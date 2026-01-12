@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import zipfile
 from pathlib import Path
+from typing import Generator
 from uuid import uuid4
 
 import pytest
@@ -24,33 +25,32 @@ from coreason_assay.bec_manager import BECManager
 
 class TestBECManagerZipComplex:
     @pytest.fixture
-    def temp_dir(self):
+    def temp_dir(self) -> Generator[Path, None, None]:
         d = tempfile.mkdtemp()
         yield Path(d)
         shutil.rmtree(d)
 
     @pytest.fixture
-    def sensitive_file(self, temp_dir):
+    def sensitive_file(self, temp_dir: Path) -> Path:
         # Create a file outside the extraction root
         p = temp_dir / "secret.txt"
         p.write_text("classified")
         return p
 
-    def create_csv_manifest(self, path: Path, file_ref: str):
+    def create_csv_manifest(self, path: Path, file_ref: str) -> None:
         with path.open("w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(
-                f,
-                fieldnames=["corpus_id", "prompt", "files", "expected_text"]
-            )
+            writer = csv.DictWriter(f, fieldnames=["corpus_id", "prompt", "files", "expected_text"])
             writer.writeheader()
-            writer.writerow({
-                "corpus_id": str(uuid4()),
-                "prompt": "Test",
-                "files": json.dumps([file_ref]),
-                "expected_text": "Expectation"
-            })
+            writer.writerow(
+                {
+                    "corpus_id": str(uuid4()),
+                    "prompt": "Test",
+                    "files": json.dumps([file_ref]),
+                    "expected_text": "Expectation",
+                }
+            )
 
-    def test_zip_absolute_path_security(self, temp_dir, sensitive_file):
+    def test_zip_absolute_path_security(self, temp_dir: Path, sensitive_file: Path) -> None:
         """
         Verify that a manifest containing an absolute path to a file outside
         the extraction directory is rejected.
@@ -70,7 +70,7 @@ class TestBECManagerZipComplex:
         with pytest.raises(ValueError, match="Security Error"):
             BECManager.load_from_zip(zip_path, extract_dir)
 
-    def test_zip_unicode_filenames(self, temp_dir):
+    def test_zip_unicode_filenames(self, temp_dir: Path) -> None:
         """
         Test handling of unicode filenames in both manifest and ZIP structure.
         """
@@ -99,7 +99,7 @@ class TestBECManagerZipComplex:
         assert resolved.name == filename
         assert resolved.exists()
 
-    def test_zip_mixed_separators(self, temp_dir):
+    def test_zip_mixed_separators(self, temp_dir: Path) -> None:
         """
         Test that Windows-style backslashes in the manifest are handled correctly
         on Linux/Unix systems (converted to proper Path objects).
@@ -133,7 +133,7 @@ class TestBECManagerZipComplex:
         assert resolved.parent.name == "subdir"
         assert resolved.exists()
 
-    def test_zip_symlink_security(self, temp_dir, sensitive_file):
+    def test_zip_symlink_security(self, temp_dir: Path, sensitive_file: Path) -> None:
         """
         Simulate a scenario where the extraction results in a symlink pointing outside.
         Since we can't easily create such a zip consistently, we manually 'poison'
@@ -183,7 +183,7 @@ class TestBECManagerZipComplex:
         with pytest.raises(ValueError, match="Security Error"):
             BECManager.load_from_zip(zip_path, extract_dir)
 
-    def test_zip_empty_file(self, temp_dir):
+    def test_zip_empty_file(self, temp_dir: Path) -> None:
         """Test handling of an empty ZIP file."""
         zip_path = temp_dir / "empty.zip"
         with zipfile.ZipFile(zip_path, "w"):
