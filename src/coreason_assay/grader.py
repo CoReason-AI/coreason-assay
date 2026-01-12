@@ -148,28 +148,29 @@ class ReasoningGrader(BaseGrader):
     Uses an LLMClient to evaluate the execution trace.
     """
 
+    # We use explicit markers for replacement instead of format() to be safe with JSON braces
     PROMPT_TEMPLATE = """You are an expert evaluator of AI reasoning chains.
 Your task is to verify if the actual execution trace of an AI agent contains specific required reasoning steps.
 
 Required Reasoning Steps:
-{required_steps}
+__REQUIRED_STEPS__
 
 Actual Execution Trace:
-{trace}
+__TRACE__
 
 (Fallback) Actual Output Text:
-{text}
+__TEXT__
 
 Instructions:
 1. Analyze the trace (and text if trace is insufficient) to find evidence of each required step.
 2. Return a JSON object with the following structure:
-{{
+{
   "steps_analysis": [
-    {{"step": "step description", "found": true/false, "evidence": "quote or explanation"}},
+    {"step": "step description", "found": true/false, "evidence": "quote or explanation"},
     ...
   ],
   "score": <float between 0.0 and 1.0 representing percentage of steps found>
-}}
+}
 
 Return ONLY the JSON.
 """
@@ -200,10 +201,11 @@ Return ONLY the JSON.
         # Format steps list
         formatted_steps = "\n".join([f"{i + 1}. {step}" for i, step in enumerate(required_steps)])
 
-        prompt = self.PROMPT_TEMPLATE.format(
-            required_steps=formatted_steps,
-            trace=trace,
-            text=text,
+        # Use replace() instead of format() to avoid issues with curly braces in trace/text (e.g. JSON)
+        prompt = (
+            self.PROMPT_TEMPLATE.replace("__REQUIRED_STEPS__", formatted_steps)
+            .replace("__TRACE__", trace)
+            .replace("__TEXT__", text)
         )
 
         try:
@@ -218,13 +220,33 @@ Return ONLY the JSON.
 
             analysis = json.loads(cleaned_response)
 
-            score_val = float(analysis.get("score", 0.0))
+            score_val_raw = analysis.get("score", 0.0)
+            try:
+                score_val = float(score_val_raw)
+            except (ValueError, TypeError):
+                # Handle cases where score might be "100%" or non-numeric garbage
+                # If it's a string ending in %, strip it
+                if isinstance(score_val_raw, str) and score_val_raw.endswith("%"):
+                    try:
+                        score_val = float(score_val_raw.rstrip("%")) / 100.0
+                    except ValueError:
+                        score_val = 0.0
+                else:
+                    score_val = 0.0
+
             steps_analysis = analysis.get("steps_analysis", [])
 
             # Construct detailed reasoning from analysis
             details = []
             for item in steps_analysis:
-                status = "✅" if item.get("found") else "❌"
+                # Handle string "true"/"false" if LLM returns strings
+                found_raw = item.get("found")
+                if isinstance(found_raw, str):
+                    is_found = found_raw.lower() == "true"
+                else:
+                    is_found = bool(found_raw)
+
+                status = "✅" if is_found else "❌"
                 step = item.get("step")
                 evidence = item.get("evidence", "No evidence")
                 details.append(f"{status} {step}: {evidence}")
