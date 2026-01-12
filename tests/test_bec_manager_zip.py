@@ -81,7 +81,8 @@ class TestBECManagerZip:
         assert resolved_file.is_absolute()
         assert resolved_file.exists()
         assert resolved_file.name == "protocol.pdf"
-        assert resolved_file.parent == extract_dir
+        # Compare resolved paths to handle symlinks (e.g. /var vs /private/var on macOS)
+        assert resolved_file.parent.resolve() == extract_dir.resolve()
 
     def test_load_valid_zip_jsonl(self, temp_dir: Path, dummy_pdf: Path) -> None:
         manifest_path = temp_dir / "manifest.jsonl"
