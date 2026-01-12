@@ -21,6 +21,7 @@ from coreason_assay.models import (
     TestCaseExpectation,
     TestCaseInput,
     TestCorpus,
+    TestResult,
     TestResultOutput,
     TestRun,
     TestRunStatus,
@@ -222,10 +223,12 @@ async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker:
     simulator = Simulator(runner)
 
     # Mock run_case to raise an exception *directly*, not returning a failed result.
-    # This simulates a crash that bypasses run_case's internal try/except block
-    # (e.g. if the method definition itself was somehow broken or asyncio failed).
-    # Since run_case is async, side_effect needs to raise.
-    mocker.patch.object(simulator, "run_case", side_effect=RuntimeError("Catastrophic Failure"))
+    # This simulates a crash that bypasses run_case's internal try/except block.
+    # We define a coroutine that raises when awaited.
+    async def broken_method(*args: Any, **kwargs: Any) -> TestResult:
+        raise RuntimeError("Catastrophic Failure")
+
+    mocker.patch.object(simulator, "run_case", side_effect=broken_method)
 
     test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
 
