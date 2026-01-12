@@ -70,10 +70,7 @@ def test_trace_with_json_and_braces(
 
     expectations = {"reasoning": ["Step 1"]}
 
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [{"step": "Step 1", "found": True}],
-        "score": 1.0
-    })
+    mock_llm_client.default_response = json.dumps({"steps_analysis": [{"step": "Step 1", "found": True}], "score": 1.0})
 
     # Should not raise error
     score = reasoning_grader.grade(complex_result, expectations=expectations)
@@ -92,14 +89,17 @@ def test_fuzzy_score_parsing(
     expectations = {"reasoning": ["Step 1"]}
 
     # Test string score "0.5"
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [{"step": "Step 1", "found": "true"}], # Also test boolean as string
-        "score": "0.5"
-    })
+    mock_llm_client.default_response = json.dumps(
+        {
+            "steps_analysis": [{"step": "Step 1", "found": "true"}],  # Also test boolean as string
+            "score": "0.5",
+        }
+    )
 
     score = reasoning_grader.grade(complex_result, expectations=expectations)
 
     assert score.value == 0.5
+    assert score.reasoning is not None
     assert "✅ Step 1" in score.reasoning  # "true" string should be True
 
 
@@ -108,13 +108,11 @@ def test_percentage_score_parsing(
 ) -> None:
     expectations = {"reasoning": ["Step 1"]}
 
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [],
-        "score": "100%"
-    })
+    mock_llm_client.default_response = json.dumps({"steps_analysis": [], "score": "100%"})
 
     score = reasoning_grader.grade(complex_result, expectations=expectations)
     assert score.value == 1.0
+
 
 def test_invalid_score_parsing(
     mock_llm_client: MockLLMClient, reasoning_grader: ReasoningGrader, complex_result: TestResult
@@ -122,18 +120,12 @@ def test_invalid_score_parsing(
     expectations = {"reasoning": ["Step 1"]}
 
     # Test invalid string percentage
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [],
-        "score": "bad%"
-    })
+    mock_llm_client.default_response = json.dumps({"steps_analysis": [], "score": "bad%"})
     score = reasoning_grader.grade(complex_result, expectations=expectations)
     assert score.value == 0.0
 
     # Test completely invalid score
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [],
-        "score": "invalid"
-    })
+    mock_llm_client.default_response = json.dumps({"steps_analysis": [], "score": "invalid"})
     score = reasoning_grader.grade(complex_result, expectations=expectations)
     assert score.value == 0.0
 
@@ -143,13 +135,9 @@ def test_duplicate_expectations(
 ) -> None:
     expectations = {"reasoning": ["Check A", "Check A"]}
 
-    mock_llm_client.default_response = json.dumps({
-        "steps_analysis": [
-            {"step": "Check A", "found": True},
-            {"step": "Check A", "found": True}
-        ],
-        "score": 1.0
-    })
+    mock_llm_client.default_response = json.dumps(
+        {"steps_analysis": [{"step": "Check A", "found": True}, {"step": "Check A", "found": True}], "score": 1.0}
+    )
 
     score = reasoning_grader.grade(complex_result, expectations=expectations)
     assert score.value == 1.0
