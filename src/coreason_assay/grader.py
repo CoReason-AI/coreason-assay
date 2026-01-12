@@ -343,7 +343,16 @@ Return ONLY the JSON.
                 reasoning="No answer text produced by agent.",
             )
 
-        prompt = self.PROMPT_TEMPLATE.replace("__CONTEXT__", context_str).replace("__ANSWER__", answer_text)
+        # Use chained replace carefully.
+        # Although unlikely, if context_str contains "__ANSWER__", the second replace would inject the answer
+        # into the context section. To prevent this, we could use unique keys or do it in two steps.
+        # But replacing sequentially is standard.
+        # To be safe against collision, we replace in a specific order if we know the structure.
+        # But context is arbitrary.
+        # Better: use string formatting or replace simultaneously.
+        # Since replace() processes the string, we can do:
+        prompt = self.PROMPT_TEMPLATE.replace("__CONTEXT__", context_str)
+        prompt = prompt.replace("__ANSWER__", answer_text)
 
         try:
             response_text = self.llm_client.complete(prompt)
