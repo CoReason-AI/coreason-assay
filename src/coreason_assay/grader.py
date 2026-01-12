@@ -279,3 +279,112 @@ Return ONLY the JSON.
                 passed=False,
                 reasoning=f"Grading failed due to internal error: {str(e)}",
             )
+
+
+class FaithfulnessGrader(BaseGrader):
+    """
+    Grades whether the agent's answer is faithful to the provided context.
+    Uses an LLMClient to detect hallucinations or contradictions.
+    """
+
+    PROMPT_TEMPLATE = """You are an expert fact-checker for AI assistants.
+Your task is to verify if the AI's generated answer is supported by the provided Context.
+Does the Answer hallucinate information not present in the Context, or contradict it?
+
+Context:
+__CONTEXT__
+
+AI Answer:
+__ANSWER__
+
+Instructions:
+1. Analyze the Answer against the Context.
+2. Return a JSON object with the following structure:
+{
+  "faithful": true/false,
+  "reasoning": "Explanation of why it is faithful or not. Cite specific contradictions if any.",
+  "score": 1.0 (if faithful) or 0.0 (if not)
+}
+
+Return ONLY the JSON.
+"""
+
+    def __init__(self, llm_client: LLMClient):
+        self.llm_client = llm_client
+
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
+        # Extract context
+        context_str = ""
+        if inputs:
+            # We look for context in inputs.context
+            # We convert the whole dict to a string representation
+            if inputs.context:
+                context_str = json.dumps(inputs.context, indent=2)
+
+        if not context_str:
+            return Score(
+                name="Faithfulness",
+                value=0.0,
+                passed=False,
+                reasoning="No context provided in inputs to verify against.",
+            )
+
+        answer_text = result.actual_output.text or ""
+        if not answer_text:
+            return Score(
+                name="Faithfulness",
+                value=0.0,
+                passed=False,
+                reasoning="No answer text produced by agent.",
+            )
+
+        # Use chained replace carefully.
+        # Although unlikely, if context_str contains "__ANSWER__", the second replace would inject the answer
+        # into the context section. To prevent this, we could use unique keys or do it in two steps.
+        # But replacing sequentially is standard.
+        # To be safe against collision, we replace in a specific order if we know the structure.
+        # But context is arbitrary.
+        # Better: use string formatting or replace simultaneously.
+        # Since replace() processes the string, we can do:
+        prompt = self.PROMPT_TEMPLATE.replace("__CONTEXT__", context_str)
+        prompt = prompt.replace("__ANSWER__", answer_text)
+
+        try:
+            response_text = self.llm_client.complete(prompt)
+            # Clean JSON
+            cleaned_response = response_text.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+
+            analysis = json.loads(cleaned_response)
+
+            is_faithful = analysis.get("faithful", False)
+            if isinstance(is_faithful, str):
+                is_faithful = is_faithful.lower() == "true"
+
+            score_val = float(analysis.get("score", 1.0 if is_faithful else 0.0))
+            reasoning = analysis.get("reasoning", "No reasoning provided.")
+
+            return Score(
+                name="Faithfulness",
+                value=score_val,
+                max_value=1.0,
+                passed=is_faithful,
+                reasoning=reasoning,
+            )
+
+        except Exception as e:
+            logger.error(f"Error in FaithfulnessGrader: {e}")
+            return Score(
+                name="Faithfulness",
+                value=0.0,
+                passed=False,
+                reasoning=f"Grading failed due to internal error: {str(e)}",
+            )
