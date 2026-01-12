@@ -10,6 +10,7 @@
 
 import csv
 import json
+import zipfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -175,3 +176,101 @@ class BECManager:
 
         logger.info(f"Successfully loaded {len(test_cases)} test cases from {path}")
         return test_cases
+
+    @classmethod
+    def load_from_zip(cls, zip_path: Union[str, Path], target_dir: Union[str, Path]) -> List[TestCase]:
+        """
+        Loads Test Cases from a ZIP archive.
+        The ZIP must contain exactly one manifest file (.csv or .jsonl).
+        Assets referenced in the manifest (inputs.files) are checked for existence
+        within the extracted directory.
+
+        Args:
+            zip_path: Path to the .zip file.
+            target_dir: Directory where the zip contents will be extracted.
+
+        Returns:
+            List[TestCase]: A list of validated TestCase objects with absolute file paths.
+
+        Raises:
+            FileNotFoundError: If zip_path does not exist or referenced assets are missing.
+            ValueError: If manifest is missing, ambiguous, or invalid.
+        """
+        z_path = Path(zip_path)
+        t_dir = Path(target_dir)
+
+        if not z_path.exists():
+            raise FileNotFoundError(f"ZIP file not found: {z_path}")
+
+        # 1. Extract ZIP
+        try:
+            with zipfile.ZipFile(z_path, "r") as zf:
+                zf.extractall(t_dir)
+        except zipfile.BadZipFile as e:
+            raise ValueError(f"Invalid ZIP file: {e}") from e
+
+        # 2. Find Manifest
+        # We look for files ending in .csv or .jsonl in the root of the extracted dir
+        # We generally expect the manifest to be at the top level.
+        # We search recursively but fail if multiple candidates are found to avoid ambiguity.
+        candidates = list(t_dir.rglob("*.csv")) + list(t_dir.rglob("*.jsonl"))
+
+        # Filter out __MACOSX artifacts if any
+        candidates = [c for c in candidates if "__MACOSX" not in c.parts]
+
+        if not candidates:
+            raise ValueError("No manifest file (.csv or .jsonl) found in ZIP archive.")
+
+        if len(candidates) > 1:
+            raise ValueError(
+                f"Ambiguous ZIP content: Multiple potential manifest files found: {[c.name for c in candidates]}"
+            )
+
+        manifest_path = candidates[0]
+        logger.info(f"Found manifest file: {manifest_path}")
+
+        # 3. Load Cases
+        if manifest_path.suffix.lower() == ".csv":
+            cases = cls.load_from_csv(manifest_path)
+        else:
+            cases = cls.load_from_jsonl(manifest_path)
+
+        # 4. Resolve and Validate File Paths
+        # The manifest file is at `manifest_path`. Relative paths in the manifest
+        # should generally be relative to the manifest's directory.
+        manifest_dir = manifest_path.parent
+
+        for case in cases:
+            resolved_files = []
+            for file_ref in case.inputs.files:
+                # If it's a URL (s3://, http://), leave it alone
+                if "://" in file_ref:
+                    resolved_files.append(file_ref)
+                    continue
+
+                # Assume local relative path
+                clean_ref = Path(file_ref)
+
+                # Construct absolute path
+                abs_path = (manifest_dir / clean_ref).resolve()
+
+                # Security check: prevent path traversal out of target_dir
+                try:
+                    abs_path.relative_to(t_dir.resolve())
+                except ValueError:
+                    logger.warning(
+                        f"File path {file_ref} resolves to {abs_path} which is outside extraction dir {t_dir}. Rejecting."  # noqa: E501
+                    )
+                    raise ValueError(
+                        f"Security Error: File path '{file_ref}' attempts to access outside the extraction directory."
+                    ) from None
+
+                if not abs_path.exists():
+                    raise FileNotFoundError(f"Referenced asset not found in ZIP: {file_ref} (looked at {abs_path})")
+
+                resolved_files.append(str(abs_path))
+
+            # Update the case with resolved paths
+            case.inputs.files = resolved_files
+
+        return cases
