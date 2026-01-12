@@ -249,7 +249,9 @@ class BECManager:
                     continue
 
                 # Assume local relative path
-                clean_ref = Path(file_ref)
+                # Normalize separators for cross-platform compatibility (Windows manifest on Linux)
+                file_ref_normalized = file_ref.replace("\\", "/")
+                clean_ref = Path(file_ref_normalized)
 
                 # Construct absolute path
                 abs_path = (manifest_dir / clean_ref).resolve()
