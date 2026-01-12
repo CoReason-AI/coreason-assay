@@ -32,7 +32,7 @@ class AssessmentEngine:
         self.simulator = simulator
         self.graders = graders
 
-    def _grade_result(self, result: TestResult, case_expectations: Any) -> None:
+    def _grade_result(self, result: TestResult, case_inputs: Any, case_expectations: Any) -> None:
         """
         Applies all graders to a single result and updates it in-place.
         """
@@ -45,7 +45,7 @@ class AssessmentEngine:
 
         for grader in self.graders:
             try:
-                score = grader.grade(result, expectations_dict)
+                score = grader.grade(result, inputs=case_inputs, expectations=expectations_dict)
                 result.scores.append(score)
             except Exception as e:
                 logger.error(f"Grader {grader.__class__.__name__} failed for case {result.case_id}: {e}")
@@ -96,7 +96,7 @@ class AssessmentEngine:
                 return
 
             # 2. Grade the result immediately
-            self._grade_result(result, case.expectations)
+            self._grade_result(result, case.inputs, case.expectations)
 
             # 3. Forward to the user's callback
             if on_progress:

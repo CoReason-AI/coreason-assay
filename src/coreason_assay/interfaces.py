@@ -37,3 +37,23 @@ class AgentRunner(ABC):
             TestResultOutput: The raw output from the agent (text, trace, structured_output).
         """
         pass  # pragma: no cover
+
+
+class LLMClient(ABC):
+    """
+    Abstract protocol for interacting with an LLM provider.
+    Used by Probabilistic Graders (LLM-as-a-Judge).
+    """
+
+    @abstractmethod
+    def complete(self, prompt: str) -> str:
+        """
+        Generates a text completion for the given prompt.
+
+        Args:
+            prompt: The input prompt string.
+
+        Returns:
+            str: The LLM's response text.
+        """
+        pass  # pragma: no cover

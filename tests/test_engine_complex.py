@@ -139,7 +139,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
     # Grader A: Passes Case 1 & 2, Fails 3
     grader_a = MagicMock(spec=BaseGrader)
 
-    def grade_a(result: TestResult, expectations: Any) -> Score:
+    def grade_a(result: TestResult, **kwargs: Any) -> Score:
         passed = result.case_id in (case1.id, case2.id)
         return Score(name="GraderA", value=1.0 if passed else 0.0, passed=passed, reasoning="A")
 
@@ -148,7 +148,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
     # Grader B: Passes Case 1, Fails 2 & 3
     grader_b = MagicMock(spec=BaseGrader)
 
-    def grade_b(result: TestResult, expectations: Any) -> Score:
+    def grade_b(result: TestResult, **kwargs: Any) -> Score:
         passed = result.case_id == case1.id
         return Score(name="GraderB", value=1.0 if passed else 0.0, passed=passed, reasoning="B")
 

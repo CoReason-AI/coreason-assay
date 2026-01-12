@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 from jsonschema import SchemaError, ValidationError, validate
 
-from coreason_assay.models import Score, TestResult
+from coreason_assay.models import Score, TestCaseInput, TestResult
 
 
 class BaseGrader(ABC):
@@ -23,12 +23,18 @@ class BaseGrader(ABC):
     """
 
     @abstractmethod
-    def grade(self, result: TestResult, expectations: Optional[Dict[str, Any]] = None) -> Score:
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
         """
         Evaluate the result and return a Score.
 
         Args:
             result: The result of the test run.
+            inputs: Optional TestCaseInput containing the original request (for context-aware grading).
             expectations: Optional dictionary of specific expectations for this grader
                           (e.g., specific schema ID, custom threshold).
                           If not provided, the grader may use defaults or data from result.
@@ -44,7 +50,12 @@ class LatencyGrader(BaseGrader):
     def __init__(self, threshold_ms: float = 5000.0):
         self.default_threshold_ms = threshold_ms
 
-    def grade(self, result: TestResult, expectations: Optional[Dict[str, Any]] = None) -> Score:
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
         latency = result.metrics.get("latency_ms")
         if latency is None:
             return Score(
@@ -73,7 +84,12 @@ class JsonSchemaGrader(BaseGrader):
     Grades whether the output matches the expected JSON schema.
     """
 
-    def grade(self, result: TestResult, expectations: Optional[Dict[str, Any]] = None) -> Score:
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
         structured_output = result.actual_output.structured_output
 
         if structured_output is None:
