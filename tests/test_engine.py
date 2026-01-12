@@ -111,10 +111,11 @@ async def test_run_assay_basic_flow(
 
     # Verify Grader called with correct expectations
     mock_grader.grade.assert_called_once()
-    args = mock_grader.grade.call_args
-    # args[0] is (result, expectations)
-    assert args[0][0] == result_obj
-    assert args[0][1]["text"] == "hello"
+    call_args = mock_grader.grade.call_args
+    # call_args.args is (result,)
+    # call_args.kwargs is {'inputs': ..., 'expectations': ...}
+    assert call_args.args[0] == result_obj
+    assert call_args.kwargs["expectations"]["text"] == "hello"
 
 
 @pytest.mark.asyncio
