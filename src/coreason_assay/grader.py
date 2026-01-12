@@ -8,12 +8,15 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
 from jsonschema import SchemaError, ValidationError, validate
 
+from coreason_assay.interfaces import LLMClient
 from coreason_assay.models import Score, TestCaseInput, TestResult
+from coreason_assay.utils.logger import logger
 
 
 class BaseGrader(ABC):
@@ -137,3 +140,120 @@ class JsonSchemaGrader(BaseGrader):
             passed=True,
             reasoning="Structured output matches the expected JSON schema.",
         )
+
+
+class ReasoningGrader(BaseGrader):
+    """
+    Grades whether the agent followed the expected reasoning steps.
+    Uses an LLMClient to evaluate the execution trace.
+    """
+
+    PROMPT_TEMPLATE = """You are an expert evaluator of AI reasoning chains.
+Your task is to verify if the actual execution trace of an AI agent contains specific required reasoning steps.
+
+Required Reasoning Steps:
+{required_steps}
+
+Actual Execution Trace:
+{trace}
+
+(Fallback) Actual Output Text:
+{text}
+
+Instructions:
+1. Analyze the trace (and text if trace is insufficient) to find evidence of each required step.
+2. Return a JSON object with the following structure:
+{{
+  "steps_analysis": [
+    {{"step": "step description", "found": true/false, "evidence": "quote or explanation"}},
+    ...
+  ],
+  "score": <float between 0.0 and 1.0 representing percentage of steps found>
+}}
+
+Return ONLY the JSON.
+"""
+
+    def __init__(self, llm_client: LLMClient):
+        self.llm_client = llm_client
+
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
+        # Check for reasoning expectations
+        required_steps = expectations.get("reasoning") if expectations else None
+
+        if not required_steps:
+            return Score(
+                name="ReasoningAlignment",
+                value=1.0,
+                passed=True,
+                reasoning="No reasoning expectations provided.",
+            )
+
+        trace = result.actual_output.trace or ""
+        text = result.actual_output.text or ""
+
+        # Format steps list
+        formatted_steps = "\n".join([f"{i + 1}. {step}" for i, step in enumerate(required_steps)])
+
+        prompt = self.PROMPT_TEMPLATE.format(
+            required_steps=formatted_steps,
+            trace=trace,
+            text=text,
+        )
+
+        try:
+            response_text = self.llm_client.complete(prompt)
+            # Try to parse JSON from the response
+            # Sometimes LLMs wrap JSON in ```json ... ```
+            cleaned_response = response_text.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+
+            analysis = json.loads(cleaned_response)
+
+            score_val = float(analysis.get("score", 0.0))
+            steps_analysis = analysis.get("steps_analysis", [])
+
+            # Construct detailed reasoning from analysis
+            details = []
+            for item in steps_analysis:
+                status = "✅" if item.get("found") else "❌"
+                step = item.get("step")
+                evidence = item.get("evidence", "No evidence")
+                details.append(f"{status} {step}: {evidence}")
+
+            reasoning_text = "\n".join(details)
+            if not reasoning_text:
+                reasoning_text = "LLM provided no detailed analysis."
+
+            # Pass if score is 1.0 (or very close)
+            # Or should we allow partial pass? Usually QC is strict.
+            # But PRD says "Score: 50% (Correct Answer, Invalid Process)".
+            # If the requirement is "Did it follow steps?", then if it missed steps, it failed "Reasoning Alignment"?
+            # However, the Score object has a `passed` boolean.
+            # If score < 1.0, passed = False seems appropriate for "Alignment".
+            passed = score_val >= 0.99  # Allow some float error, but basically 100%
+
+            return Score(
+                name="ReasoningAlignment",
+                value=score_val,
+                max_value=1.0,
+                passed=passed,
+                reasoning=reasoning_text,
+            )
+
+        except Exception as e:
+            logger.error(f"Error in ReasoningGrader: {e}")
+            return Score(
+                name="ReasoningAlignment",
+                value=0.0,
+                passed=False,
+                reasoning=f"Grading failed due to internal error: {str(e)}",
+            )
