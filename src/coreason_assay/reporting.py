@@ -9,6 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
 import math
+from collections import defaultdict
 from typing import Dict, List, Union
 
 from coreason_assay.models import AggregateMetric, ReportCard, TestResult, TestRun
@@ -22,6 +23,7 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
     - Global Pass Rate
     - Average Execution Latency (raw execution time)
     - Metric-specific aggregates (e.g. Average Faithfulness Score)
+    - Metric-specific Pass Rates
 
     Args:
         run: The TestRun object.
@@ -63,31 +65,54 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
 
     # 2. Score-specific Aggregates
     # We group scores by name (e.g. "Faithfulness", "JsonSchema")
-    score_groups: Dict[str, List[float]] = {}
+    # For each name, we track: [list_of_values, count_of_passed]
+    # Use defaultdict for easier accumulation
+    score_stats: Dict[str, Dict[str, Union[List[float], int]]] = defaultdict(lambda: {"values": [], "passed_count": 0})
 
     for result in results:
         for score in result.scores:
             val = score.value
+            # For values, we store the raw value for averaging.
+            # Booleans are converted to 1.0/0.0 for average calculation.
+            numeric_val = val
             if isinstance(val, bool):
-                val = 1.0 if val else 0.0
+                numeric_val = 1.0 if val else 0.0
 
             # Ensure we handle numeric conversion safely and filter nan/inf
-            if isinstance(val, (int, float)):
-                f_val = float(val)
+            if isinstance(numeric_val, (int, float)):
+                f_val = float(numeric_val)
                 if is_valid_number(f_val):
-                    if score.name not in score_groups:
-                        score_groups[score.name] = []
-                    score_groups[score.name].append(f_val)
+                    score_stats[score.name]["values"].append(f_val)  # type: ignore
 
-    for name, values in score_groups.items():
-        if values:
-            avg_val = sum(values) / len(values)
+            # Track passed count
+            if score.passed:
+                score_stats[score.name]["passed_count"] += 1  # type: ignore
+
+    for name, stats in score_stats.items():
+        values: List[float] = stats["values"]  # type: ignore
+        passed_count: int = stats["passed_count"]  # type: ignore
+        total_samples = len(values)
+
+        if total_samples > 0:
+            # 2a. Average Score
+            avg_val = sum(values) / total_samples
             aggregates.append(
                 AggregateMetric(
                     name=f"Average {name} Score",
                     value=avg_val,
                     unit="score",
-                    total_samples=len(values),
+                    total_samples=total_samples,
+                )
+            )
+
+            # 2b. Pass Rate
+            metric_pass_rate = passed_count / total_samples
+            aggregates.append(
+                AggregateMetric(
+                    name=f"{name} Pass Rate",
+                    value=metric_pass_rate,
+                    unit="ratio",
+                    total_samples=total_samples,
                 )
             )
 
