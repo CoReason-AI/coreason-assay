@@ -317,6 +317,8 @@ class ForbiddenContentGrader(BaseGrader):
         text_lower = text.lower()
 
         for term in forbidden_list:
+            if not term:
+                continue
             if term.lower() in text_lower:
                 found_terms.append(term)
 
