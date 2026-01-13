@@ -11,7 +11,6 @@
 from uuid import uuid4
 
 import pytest
-
 from coreason_assay.grader import JsonSchemaGrader, LatencyGrader
 from coreason_assay.models import Score, TestResult, TestResultOutput
 
