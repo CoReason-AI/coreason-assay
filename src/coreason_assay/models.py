@@ -159,3 +159,30 @@ class ReportCard(BaseModel):
 
     # Granular aggregates
     aggregates: List[AggregateMetric] = Field(default_factory=list, description="List of aggregated metrics.")
+
+
+class DriftMetric(BaseModel):
+    """
+    Represents the difference for a specific metric between two runs.
+    """
+
+    name: str = Field(..., description="Name of the metric (e.g., 'Average Latency').")
+    unit: Optional[str] = Field(None, description="Unit of measurement (e.g., 'ms', '%').")
+    current_value: float = Field(..., description="Value in the current run.")
+    previous_value: float = Field(..., description="Value in the previous run.")
+    delta: float = Field(..., description="Absolute difference (current - previous).")
+    pct_change: Optional[float] = Field(None, description="Percentage change relative to previous value (0.0 to 1.0+).")
+    is_regression: bool = Field(..., description="True if this change is considered negative/bad.")
+
+
+class DriftReport(BaseModel):
+    """
+    A report comparing two Test Runs to identify regressions.
+    """
+
+    current_run_id: UUID = Field(..., description="ID of the current TestRun.")
+    previous_run_id: UUID = Field(..., description="ID of the previous TestRun.")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of generation."
+    )
+    metrics: List[DriftMetric] = Field(default_factory=list, description="List of compared metrics.")
