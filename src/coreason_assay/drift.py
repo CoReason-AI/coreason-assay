@@ -46,11 +46,12 @@ def generate_drift_report(current: ReportCard, previous: ReportCard) -> DriftRep
         if curr_agg.name in prev_aggs:
             prev_val = prev_aggs[curr_agg.name]
 
-            # Determine directionality based on name
-            # Latency -> Lower is better
-            # Scores -> Higher is better
-            # We use simple heuristic string matching
-            lower_is_better = "latency" in curr_agg.name.lower()
+            # Determine directionality based on unit
+            # "ms", "s", "seconds" -> Lower is better
+            # "score", "ratio", "%" -> Higher is better
+            # Default to Higher is better if unknown
+            unit_lower = (curr_agg.unit or "").lower()
+            lower_is_better = unit_lower in ["ms", "s", "seconds"]
             higher_is_better = not lower_is_better
 
             drift_metrics.append(
