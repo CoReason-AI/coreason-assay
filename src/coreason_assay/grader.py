@@ -281,6 +281,63 @@ Return ONLY the JSON.
             )
 
 
+class ForbiddenContentGrader(BaseGrader):
+    """
+    Grades whether the agent's output contains any forbidden content.
+    """
+
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
+        forbidden_list = expectations.get("forbidden_content") if expectations else None
+
+        if not forbidden_list:
+            return Score(
+                name="ForbiddenContent",
+                value=1.0,
+                passed=True,
+                reasoning="No forbidden content specified in expectations.",
+            )
+
+        text = result.actual_output.text
+        if text is None:
+            # If there is no text output, we cannot check for forbidden content.
+            # Technically, if there's no output, there's no forbidden content.
+            return Score(
+                name="ForbiddenContent",
+                value=1.0,
+                passed=True,
+                reasoning="No text output to check for forbidden content.",
+            )
+
+        found_terms = []
+        text_lower = text.lower()
+
+        for term in forbidden_list:
+            if not term:
+                continue
+            if term.lower() in text_lower:
+                found_terms.append(term)
+
+        if found_terms:
+            return Score(
+                name="ForbiddenContent",
+                value=0.0,
+                passed=False,
+                reasoning=f"Found forbidden content: {', '.join([f'{t!r}' for t in found_terms])}",
+            )
+
+        return Score(
+            name="ForbiddenContent",
+            value=1.0,
+            passed=True,
+            reasoning="None of the forbidden terms were found in the output.",
+        )
+
+
 class FaithfulnessGrader(BaseGrader):
     """
     Grades whether the agent's answer is faithful to the provided context.
