@@ -65,13 +65,18 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
 
     # 2. Score-specific Aggregates
     # We group scores by name (e.g. "Faithfulness", "JsonSchema")
-    # For each name, we track: [list_of_values, count_of_passed]
+    # For each name, we track: [list_of_values, passed_count, total_count]
     # Use defaultdict for easier accumulation
-    score_stats: Dict[str, Dict[str, Union[List[float], int]]] = defaultdict(lambda: {"values": [], "passed_count": 0})
+    score_stats: Dict[str, Dict[str, Union[List[float], int]]] = defaultdict(
+        lambda: {"values": [], "passed_count": 0, "total_count": 0}
+    )
 
     for result in results:
         for score in result.scores:
             val = score.value
+            # Increment total count for this score dimension (regardless of value validity)
+            score_stats[score.name]["total_count"] += 1  # type: ignore
+
             # For values, we store the raw value for averaging.
             # Booleans are converted to 1.0/0.0 for average calculation.
             numeric_val = val
@@ -91,28 +96,29 @@ def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
     for name, stats in score_stats.items():
         values: List[float] = stats["values"]  # type: ignore
         passed_count: int = stats["passed_count"]  # type: ignore
-        total_samples = len(values)
+        total_count: int = stats["total_count"]  # type: ignore
 
-        if total_samples > 0:
-            # 2a. Average Score
-            avg_val = sum(values) / total_samples
+        # 2a. Average Score (Only for valid numeric values)
+        if values:
+            avg_val = sum(values) / len(values)
             aggregates.append(
                 AggregateMetric(
                     name=f"Average {name} Score",
                     value=avg_val,
                     unit="score",
-                    total_samples=total_samples,
+                    total_samples=len(values),
                 )
             )
 
-            # 2b. Pass Rate
-            metric_pass_rate = passed_count / total_samples
+        # 2b. Pass Rate (Based on total occurrences of the score)
+        if total_count > 0:
+            metric_pass_rate = passed_count / total_count
             aggregates.append(
                 AggregateMetric(
                     name=f"{name} Pass Rate",
                     value=metric_pass_rate,
                     unit="ratio",
-                    total_samples=total_samples,
+                    total_samples=total_count,
                 )
             )
 
