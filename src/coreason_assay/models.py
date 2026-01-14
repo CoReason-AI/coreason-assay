@@ -48,6 +48,9 @@ class TestCaseExpectation(BaseModel):
         default_factory=dict,
         description="Specific mock options for tools during this test (e.g. error injection).",
     )
+    tone: Optional[str] = Field(
+        None, description="Expected tone description (e.g. 'Professional and Empathetic')."
+    )
 
 
 class TestCase(BaseModel):
