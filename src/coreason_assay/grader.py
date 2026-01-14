@@ -485,8 +485,10 @@ Return ONLY the JSON.
     ) -> Score:
         # Determine expected tone
         expected_tone = self.default_tone
-        if expectations and expectations.get("tone"):
-            expected_tone = expectations["tone"]
+        if expectations:
+            tone_override = expectations.get("tone")
+            if isinstance(tone_override, str) and tone_override.strip():
+                expected_tone = tone_override.strip()
 
         text = result.actual_output.text
         if not text:
