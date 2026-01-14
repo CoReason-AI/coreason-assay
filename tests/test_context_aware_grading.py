@@ -104,7 +104,7 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
         id=uuid4(),
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="This is a SECRET message"),
-        expectations=TestCaseExpectation(text=None, schema_id=None, structure=None),
+        expectations=TestCaseExpectation(tone=None, text=None, schema_id=None, structure=None),
     )
     corpus = TestCorpus(project_id="p", name="c", version="v", created_by="u", cases=[case])
     run_obj = TestRun(corpus_version="v", agent_draft_version="v", status=TestRunStatus.DONE)
@@ -147,7 +147,7 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
         id=uuid4(),
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="test", context={"original": True}),
-        expectations=TestCaseExpectation(text=None, schema_id=None, structure=None),
+        expectations=TestCaseExpectation(tone=None, text=None, schema_id=None, structure=None),
     )
     corpus = TestCorpus(project_id="p", name="c", version="v", created_by="u", cases=[case])
     run_obj = TestRun(corpus_version="v", agent_draft_version="v", status=TestRunStatus.DONE)

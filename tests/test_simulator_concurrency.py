@@ -79,17 +79,17 @@ def basic_corpus() -> TestCorpus:
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 1"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 2"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 3"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
         ],
     )
