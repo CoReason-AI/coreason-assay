@@ -175,6 +175,19 @@ class DriftMetric(BaseModel):
     is_regression: bool = Field(..., description="True if this change is considered negative/bad.")
 
 
+class CaseDrift(BaseModel):
+    """
+    Represents a regression for a specific test case.
+    """
+
+    case_id: UUID = Field(..., description="The ID of the test case.")
+    change_description: str = Field(
+        ..., description="Human readable description of the change (e.g. 'Passed -> Failed')."
+    )
+    is_regression: bool = Field(..., description="True if this change is considered negative/bad.")
+    # Optional: could include score deltas here too, but description might be enough for MVP
+
+
 class DriftReport(BaseModel):
     """
     A report comparing two Test Runs to identify regressions.
@@ -185,4 +198,7 @@ class DriftReport(BaseModel):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of generation."
     )
-    metrics: List[DriftMetric] = Field(default_factory=list, description="List of compared metrics.")
+    metrics: List[DriftMetric] = Field(default_factory=list, description="List of compared aggregated metrics.")
+    case_drifts: List[CaseDrift] = Field(
+        default_factory=list, description="List of specific test cases that drifted/regressed."
+    )
