@@ -19,6 +19,7 @@ from typing import Generator
 from uuid import uuid4
 
 import pytest
+
 from coreason_assay.bec_manager import BECManager
 
 

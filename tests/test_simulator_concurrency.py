@@ -14,6 +14,7 @@ from typing import Any, Dict
 from uuid import uuid4
 
 import pytest
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,

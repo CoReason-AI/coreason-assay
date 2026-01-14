@@ -53,7 +53,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=True,
-                actual_output=TestResultOutput(),
+                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -63,7 +63,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=False,
-                actual_output=TestResultOutput(),
+                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -94,9 +94,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
         elif agg.name == "Mystery Metric":
             for i in range(agg.total_samples):
                 if i < len(results):
-                    results[i].scores.append(
-                        Score(name="Mystery Metric", value=agg.value, passed=True, reasoning="")
-                    )
+                    results[i].scores.append(Score(name="Mystery Metric", value=agg.value, passed=True, reasoning=""))
         # Handle "New Metric"
         elif agg.name == "New Metric":
             for i in range(agg.total_samples):
@@ -142,8 +140,8 @@ def test_drift_report_basic(run_id_1: UUID, run_id_2: UUID) -> None:
     assert report.current_run_id == run_id_2
     assert report.previous_run_id == run_id_1
 
-    # Note: metrics might include "Faithfulness Pass Rate" now because generate_report_card generates both avg and pass rate
-    # The original test expected 3 (Pass Rate + 2 aggregates).
+    # Note: metrics might include "Faithfulness Pass Rate" now because generate_report_card generates both avg
+    # and pass rate. The original test expected 3 (Pass Rate + 2 aggregates).
     # generate_report_card produces "Average X Score" and "X Pass Rate".
     # So we might have more.
     # We check existence and values.

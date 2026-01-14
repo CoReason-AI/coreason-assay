@@ -14,9 +14,10 @@ from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
+
 from coreason_assay.bec_manager import BECManager
 from coreason_assay.models import TestCase
-from pydantic import ValidationError
 
 
 class TestBECManager:

@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 import pytest
 
 from coreason_assay.drift import generate_drift_report
-from coreason_assay.models import AggregateMetric, ReportCard, Score, TestResult, TestResultOutput, TestRun
+from coreason_assay.models import ReportCard, Score, TestResult, TestResultOutput, TestRun
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=True,
-                actual_output=TestResultOutput(),
+                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -54,7 +54,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=False,
-                actual_output=TestResultOutput(),
+                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -68,12 +68,12 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                     # But wait, generate_report_card logic looks for specific structure
                     # If I use custom metric name in ReportCard, I need to make sure generate_report_card produces it.
                     # generate_report_card produces "Average {ScoreName} Score" or "Average Execution Latency".
-                    # If the test defines "System Speed", generate_report_card won't produce it unless I hack the scores.
+                    # If the test defines "System Speed", generate_report_card won't produce it unless I hack the scores
                     # Score(name="System Speed", value=..., unit="ms") -> "Average System Speed Score"
                     # The test expects "System Speed".
                     # This implies the previous logic allowed passing custom AggregateMetrics freely.
                     # Now generate_drift_report RE-CALCULATES them.
-                    # So if I want "System Speed" to appear, I must make sure generate_report_card produces "System Speed".
+                    # So if I want "System Speed" to appear, I must make sure generate_report_card produces it.
                     # It won't. It produces "Average System Speed Score".
                     # Unless... I mock generate_report_card?
                     # No, let's adapt the test to expect the generated name.
@@ -105,8 +105,8 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
     return run, results
 
 
-# Since generate_drift_report now relies on generate_report_card, we can't inject arbitrary aggregate names like "System Speed" easily
-# without them being prefixed by "Average ... Score".
+# Since generate_drift_report now relies on generate_report_card, we can't inject arbitrary aggregate names like
+# "System Speed" easily without them being prefixed by "Average ... Score".
 # We will modify the test to use standard names or accept the generated names.
 
 
@@ -126,9 +126,9 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
             metrics={"latency_ms": 100.0},  # System Speed
-            scores=[Score(name="Compliance", value=1.0, passed=True)],
+            scores=[Score(name="Compliance", value=1.0, passed=True, reasoning="")],
         )
         results1.append(r)
 
@@ -140,9 +140,9 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
             metrics={"latency_ms": 200.0},  # Slower (Bad)
-            scores=[Score(name="Compliance", value=0.5, passed=True)],  # Lower (Bad)
+            scores=[Score(name="Compliance", value=0.5, passed=True, reasoning="")],  # Lower (Bad)
         )
         results2.append(r)
 
@@ -172,8 +172,8 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
-            scores=[Score(name="OldMetric", value=1.0, passed=True)],
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            scores=[Score(name="OldMetric", value=1.0, passed=True, reasoning="")],
         )
         for _ in range(10)
     ]
@@ -184,7 +184,7 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
             scores=[],  # OldMetric missing
         )
         for _ in range(10)
@@ -208,8 +208,8 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
-            scores=[Score(name="Noise", value=1.0, passed=True)],
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            scores=[Score(name="Noise", value=1.0, passed=True, reasoning="")],
         )
         for _ in range(10)
     ]
@@ -221,8 +221,8 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(),
-            scores=[Score(name="Noise", value=1.0 - tiny_delta, passed=True)],
+            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            scores=[Score(name="Noise", value=1.0 - tiny_delta, passed=True, reasoning="")],
         )
         for _ in range(10)
     ]
