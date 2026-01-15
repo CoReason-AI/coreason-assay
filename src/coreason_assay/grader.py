@@ -445,3 +445,95 @@ Return ONLY the JSON.
                 passed=False,
                 reasoning=f"Grading failed due to internal error: {str(e)}",
             )
+
+
+class ToneGrader(BaseGrader):
+    """
+    Grades whether the agent's tone matches expectations.
+    Uses an LLMClient to evaluate the text.
+    """
+
+    PROMPT_TEMPLATE = """You are an expert tone analyzer for AI assistants.
+Your task is to verify if the AI's response matches the expected tone.
+
+Expected Tone:
+__TONE__
+
+AI Response:
+__RESPONSE__
+
+Instructions:
+1. Analyze the Response to see if it aligns with the Expected Tone.
+2. Return a JSON object with the following structure:
+{
+  "matches_tone": true/false,
+  "reasoning": "Explanation of why it matches or fails. Cite specific words or phrases.",
+  "score": 1.0 (if matches) or 0.0 (if not)
+}
+
+Return ONLY the JSON.
+"""
+
+    def __init__(self, llm_client: LLMClient):
+        self.llm_client = llm_client
+        self.default_tone = "Professional and Empathetic"
+
+    def grade(
+        self,
+        result: TestResult,
+        inputs: Optional[TestCaseInput] = None,
+        expectations: Optional[Dict[str, Any]] = None,
+    ) -> Score:
+        # Determine expected tone
+        expected_tone = self.default_tone
+        if expectations:
+            tone_override = expectations.get("tone")
+            if isinstance(tone_override, str) and tone_override.strip():
+                expected_tone = tone_override.strip()
+
+        text = result.actual_output.text
+        if not text:
+            return Score(
+                name="Tone",
+                value=0.0,
+                passed=False,
+                reasoning="No text output to check for tone.",
+            )
+
+        # Construct prompt
+        prompt = self.PROMPT_TEMPLATE.replace("__TONE__", expected_tone).replace("__RESPONSE__", text)
+
+        try:
+            response_text = self.llm_client.complete(prompt)
+            # Clean JSON
+            cleaned_response = response_text.strip()
+            if cleaned_response.startswith("```json"):
+                cleaned_response = cleaned_response[7:]
+            if cleaned_response.endswith("```"):
+                cleaned_response = cleaned_response[:-3]
+
+            analysis = json.loads(cleaned_response)
+
+            matches_tone = analysis.get("matches_tone", False)
+            if isinstance(matches_tone, str):
+                matches_tone = matches_tone.lower() == "true"
+
+            score_val = float(analysis.get("score", 1.0 if matches_tone else 0.0))
+            reasoning = analysis.get("reasoning", "No reasoning provided.")
+
+            return Score(
+                name="Tone",
+                value=score_val,
+                max_value=1.0,
+                passed=matches_tone,
+                reasoning=reasoning,
+            )
+
+        except Exception as e:
+            logger.error(f"Error in ToneGrader: {e}")
+            return Score(
+                name="Tone",
+                value=0.0,
+                passed=False,
+                reasoning=f"Grading failed due to internal error: {str(e)}",
+            )

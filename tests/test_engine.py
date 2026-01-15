@@ -63,7 +63,7 @@ def simple_corpus() -> TestCorpus:
                 id=case_id,
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="hi"),
-                expectations=TestCaseExpectation(text="hello", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="hello", schema_id=None, structure=None),
             )
         ],
     )

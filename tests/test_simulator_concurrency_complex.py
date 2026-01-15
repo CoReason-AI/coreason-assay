@@ -85,7 +85,7 @@ async def test_run_suite_mixed_workload() -> None:
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt=prompt),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             )
         )
 
@@ -149,7 +149,7 @@ async def test_run_suite_context_isolation() -> None:
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt=f"Case_{i}", context={"isolation_id": i, "common": "data"}),
                 expectations=TestCaseExpectation(
-                    text="Expected", schema_id=None, structure=None, tool_mocks={"mock_id": i}
+                    tone=None, text="Expected", schema_id=None, structure=None, tool_mocks={"mock_id": i}
                 ),
             )
         )

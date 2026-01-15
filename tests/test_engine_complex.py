@@ -42,7 +42,7 @@ def create_test_case() -> TestCase:
         id=uuid4(),
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="test"),
-        expectations=TestCaseExpectation(text="expected", schema_id=None, structure=None),
+        expectations=TestCaseExpectation(tone=None, text="expected", schema_id=None, structure=None),
     )
 
 
