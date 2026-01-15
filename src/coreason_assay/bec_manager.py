@@ -142,6 +142,7 @@ class BECManager:
                             forbidden_content=cls._parse_json_field(row.get("forbidden_content"), "forbidden_content")
                             or [],
                             tool_mocks=cls._parse_json_field(row.get("tool_mocks"), "tool_mocks") or {},
+                            tone=None,
                         )
 
                         # 3. Construct TestCase

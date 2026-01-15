@@ -43,6 +43,7 @@ class TestModelsComplex:
                 context={"user_role": "doctor", "department": "cardiology"},
             ),
             expectations=TestCaseExpectation(
+                tone=None,
                 text="The patient has hypertension.",
                 reasoning=["Check vitals", "Compare to guidelines"],
                 schema_id=None,
@@ -58,6 +59,7 @@ class TestModelsComplex:
                 tool_outputs={"geo_api": {"lat": 48.8566, "long": 2.3522, "city": "Paris"}},
             ),
             expectations=TestCaseExpectation(
+                tone=None,
                 structure={"city": "Paris", "country": "France"},
                 tool_mocks={"geo_api": {"error": "timeout"}},
                 text=None,

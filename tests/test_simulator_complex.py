@@ -56,7 +56,7 @@ def base_test_case() -> TestCase:
     return TestCase(
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="Base Prompt", context={}),
-        expectations=TestCaseExpectation(text="Base Expectation", schema_id=None, structure=None),
+        expectations=TestCaseExpectation(tone=None, text="Base Expectation", schema_id=None, structure=None),
     )
 
 

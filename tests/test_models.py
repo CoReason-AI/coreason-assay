@@ -30,7 +30,9 @@ class TestModels:
     def test_test_case_creation(self) -> None:
         corpus_id = uuid4()
         inputs = TestCaseInput(prompt="Hello", files=["s3://bucket/file.pdf"])
-        expectations = TestCaseExpectation(text="World", reasoning=["Step 1"], schema_id=None, structure=None)
+        expectations = TestCaseExpectation(
+            tone=None, text="World", reasoning=["Step 1"], schema_id=None, structure=None
+        )
 
         test_case = TestCase(corpus_id=corpus_id, inputs=inputs, expectations=expectations)
 
@@ -80,6 +82,6 @@ class TestModels:
         assert inputs.files == []
         assert inputs.context == {}
 
-        expectations = TestCaseExpectation(text=None, schema_id=None, structure=None)
+        expectations = TestCaseExpectation(tone=None, text=None, schema_id=None, structure=None)
         assert expectations.reasoning == []
         assert expectations.forbidden_content == []
