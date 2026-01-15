@@ -10,6 +10,7 @@
 
 import json
 from typing import Any, Dict
+from unittest.mock import Mock
 from uuid import uuid4
 
 import pytest
@@ -114,3 +115,46 @@ def test_tone_grader_large_input(mock_result: TestResult) -> None:
     assert score.passed is True
     # We just check if it ran without error and contained the text
     assert len(client.last_prompt) > len(large_text)
+
+
+def test_tone_grader_markdown_json(mock_result: TestResult) -> None:
+    """Ensure LLM response wrapped in markdown code blocks is parsed correctly."""
+    # LLM returns ```json ... ```
+    json_content = json.dumps({"matches_tone": True, "score": 1.0})
+    markdown_response = f"```json\n{json_content}\n```"
+
+    mock_result.actual_output.text = "Some text"
+    # We need to hack the client because MockLLMClient dumps dict as JSON string.
+    # But here we want to return the raw markdown string.
+    # We can just subclass or use Mock.
+
+    # Actually MockLLMClient takes a dict. Let's fix it or use a specific mock.
+    # Let's override the complete method on a new instance.
+    client = Mock()
+    client.complete.return_value = markdown_response
+
+    grader = ToneGrader(client)
+    score = grader.grade(mock_result)
+
+    assert score.passed is True
+    assert score.value == 1.0
+
+
+def test_tone_grader_string_boolean(mock_result: TestResult) -> None:
+    """Ensure string 'true'/'false' for matches_tone is handled."""
+    # LLM returns "true" string instead of boolean
+    response = {"matches_tone": "true", "score": 1.0}
+    client = MockLLMClient(response)
+
+    grader = ToneGrader(client)
+    score = grader.grade(mock_result)
+
+    assert score.passed is True
+
+    # Test "false" string
+    response_false = {"matches_tone": "false", "score": 0.0}
+    client_false = MockLLMClient(response_false)
+    grader_false = ToneGrader(client_false)
+    score_false = grader_false.grade(mock_result)
+
+    assert score_false.passed is False
