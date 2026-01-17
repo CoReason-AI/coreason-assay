@@ -16,7 +16,9 @@ from jsonschema import SchemaError, ValidationError, validate
 
 from coreason_assay.interfaces import LLMClient
 from coreason_assay.models import Score, TestCaseInput, TestResult
+from coreason_assay.prompts import FAITHFULNESS_GRADER_PROMPT, REASONING_GRADER_PROMPT, TONE_GRADER_PROMPT
 from coreason_assay.utils.logger import logger
+from coreason_assay.utils.parsing import parse_json_from_llm_response
 
 
 class BaseGrader(ABC):
@@ -43,6 +45,32 @@ class BaseGrader(ABC):
                           If not provided, the grader may use defaults or data from result.
         """
         pass  # pragma: no cover
+
+
+class LLMGrader(BaseGrader):
+    """
+    Base class for graders that utilize an LLMClient for evaluation.
+    Provides utility methods for prompt execution and JSON parsing.
+    """
+
+    def __init__(self, llm_client: LLMClient):
+        self.llm_client = llm_client
+
+    def _get_llm_analysis(self, prompt: str) -> Dict[str, Any]:
+        """
+        Executes the prompt via the LLM client and parses the JSON response.
+
+        Args:
+            prompt: The prompt to send to the LLM.
+
+        Returns:
+            Dict[str, Any]: The parsed JSON analysis.
+
+        Raises:
+            Exception: If LLM call fails or JSON parsing error occurs.
+        """
+        response_text = self.llm_client.complete(prompt)
+        return parse_json_from_llm_response(response_text)
 
 
 class LatencyGrader(BaseGrader):
@@ -142,41 +170,11 @@ class JsonSchemaGrader(BaseGrader):
         )
 
 
-class ReasoningGrader(BaseGrader):
+class ReasoningGrader(LLMGrader):
     """
     Grades whether the agent followed the expected reasoning steps.
     Uses an LLMClient to evaluate the execution trace.
     """
-
-    # We use explicit markers for replacement instead of format() to be safe with JSON braces
-    PROMPT_TEMPLATE = """You are an expert evaluator of AI reasoning chains.
-Your task is to verify if the actual execution trace of an AI agent contains specific required reasoning steps.
-
-Required Reasoning Steps:
-__REQUIRED_STEPS__
-
-Actual Execution Trace:
-__TRACE__
-
-(Fallback) Actual Output Text:
-__TEXT__
-
-Instructions:
-1. Analyze the trace (and text if trace is insufficient) to find evidence of each required step.
-2. Return a JSON object with the following structure:
-{
-  "steps_analysis": [
-    {"step": "step description", "found": true/false, "evidence": "quote or explanation"},
-    ...
-  ],
-  "score": <float between 0.0 and 1.0 representing percentage of steps found>
-}
-
-Return ONLY the JSON.
-"""
-
-    def __init__(self, llm_client: LLMClient):
-        self.llm_client = llm_client
 
     def grade(
         self,
@@ -203,22 +201,13 @@ Return ONLY the JSON.
 
         # Use replace() instead of format() to avoid issues with curly braces in trace/text (e.g. JSON)
         prompt = (
-            self.PROMPT_TEMPLATE.replace("__REQUIRED_STEPS__", formatted_steps)
+            REASONING_GRADER_PROMPT.replace("__REQUIRED_STEPS__", formatted_steps)
             .replace("__TRACE__", trace)
             .replace("__TEXT__", text)
         )
 
         try:
-            response_text = self.llm_client.complete(prompt)
-            # Try to parse JSON from the response
-            # Sometimes LLMs wrap JSON in ```json ... ```
-            cleaned_response = response_text.strip()
-            if cleaned_response.startswith("```json"):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.endswith("```"):
-                cleaned_response = cleaned_response[:-3]
-
-            analysis = json.loads(cleaned_response)
+            analysis = self._get_llm_analysis(prompt)
 
             score_val_raw = analysis.get("score", 0.0)
             try:
@@ -303,7 +292,7 @@ class ForbiddenContentGrader(BaseGrader):
             )
 
         text = result.actual_output.text
-        if text is None:
+        if not text:
             # If there is no text output, we cannot check for forbidden content.
             # Technically, if there's no output, there's no forbidden content.
             return Score(
@@ -338,36 +327,11 @@ class ForbiddenContentGrader(BaseGrader):
         )
 
 
-class FaithfulnessGrader(BaseGrader):
+class FaithfulnessGrader(LLMGrader):
     """
     Grades whether the agent's answer is faithful to the provided context.
     Uses an LLMClient to detect hallucinations or contradictions.
     """
-
-    PROMPT_TEMPLATE = """You are an expert fact-checker for AI assistants.
-Your task is to verify if the AI's generated answer is supported by the provided Context.
-Does the Answer hallucinate information not present in the Context, or contradict it?
-
-Context:
-__CONTEXT__
-
-AI Answer:
-__ANSWER__
-
-Instructions:
-1. Analyze the Answer against the Context.
-2. Return a JSON object with the following structure:
-{
-  "faithful": true/false,
-  "reasoning": "Explanation of why it is faithful or not. Cite specific contradictions if any.",
-  "score": 1.0 (if faithful) or 0.0 (if not)
-}
-
-Return ONLY the JSON.
-"""
-
-    def __init__(self, llm_client: LLMClient):
-        self.llm_client = llm_client
 
     def grade(
         self,
@@ -401,26 +365,11 @@ Return ONLY the JSON.
             )
 
         # Use chained replace carefully.
-        # Although unlikely, if context_str contains "__ANSWER__", the second replace would inject the answer
-        # into the context section. To prevent this, we could use unique keys or do it in two steps.
-        # But replacing sequentially is standard.
-        # To be safe against collision, we replace in a specific order if we know the structure.
-        # But context is arbitrary.
-        # Better: use string formatting or replace simultaneously.
-        # Since replace() processes the string, we can do:
-        prompt = self.PROMPT_TEMPLATE.replace("__CONTEXT__", context_str)
+        prompt = FAITHFULNESS_GRADER_PROMPT.replace("__CONTEXT__", context_str)
         prompt = prompt.replace("__ANSWER__", answer_text)
 
         try:
-            response_text = self.llm_client.complete(prompt)
-            # Clean JSON
-            cleaned_response = response_text.strip()
-            if cleaned_response.startswith("```json"):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.endswith("```"):
-                cleaned_response = cleaned_response[:-3]
-
-            analysis = json.loads(cleaned_response)
+            analysis = self._get_llm_analysis(prompt)
 
             is_faithful = analysis.get("faithful", False)
             if isinstance(is_faithful, str):
@@ -447,35 +396,14 @@ Return ONLY the JSON.
             )
 
 
-class ToneGrader(BaseGrader):
+class ToneGrader(LLMGrader):
     """
     Grades whether the agent's tone matches expectations.
     Uses an LLMClient to evaluate the text.
     """
 
-    PROMPT_TEMPLATE = """You are an expert tone analyzer for AI assistants.
-Your task is to verify if the AI's response matches the expected tone.
-
-Expected Tone:
-__TONE__
-
-AI Response:
-__RESPONSE__
-
-Instructions:
-1. Analyze the Response to see if it aligns with the Expected Tone.
-2. Return a JSON object with the following structure:
-{
-  "matches_tone": true/false,
-  "reasoning": "Explanation of why it matches or fails. Cite specific words or phrases.",
-  "score": 1.0 (if matches) or 0.0 (if not)
-}
-
-Return ONLY the JSON.
-"""
-
     def __init__(self, llm_client: LLMClient):
-        self.llm_client = llm_client
+        super().__init__(llm_client)
         self.default_tone = "Professional and Empathetic"
 
     def grade(
@@ -501,18 +429,10 @@ Return ONLY the JSON.
             )
 
         # Construct prompt
-        prompt = self.PROMPT_TEMPLATE.replace("__TONE__", expected_tone).replace("__RESPONSE__", text)
+        prompt = TONE_GRADER_PROMPT.replace("__TONE__", expected_tone).replace("__RESPONSE__", text)
 
         try:
-            response_text = self.llm_client.complete(prompt)
-            # Clean JSON
-            cleaned_response = response_text.strip()
-            if cleaned_response.startswith("```json"):
-                cleaned_response = cleaned_response[7:]
-            if cleaned_response.endswith("```"):
-                cleaned_response = cleaned_response[:-3]
-
-            analysis = json.loads(cleaned_response)
+            analysis = self._get_llm_analysis(prompt)
 
             matches_tone = analysis.get("matches_tone", False)
             if isinstance(matches_tone, str):
