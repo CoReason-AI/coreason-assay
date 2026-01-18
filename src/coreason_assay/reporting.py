@@ -1,0 +1,132 @@
+# Copyright (c) 2025 CoReason, Inc.
+#
+# This software is proprietary and dual-licensed.
+# Licensed under the Prosperity Public License 3.0 (the "License").
+# A copy of the license is available at https://prosperitylicense.com/versions/3.0.0
+# For details, see the LICENSE file.
+# Commercial use beyond a 30-day trial requires a separate license.
+#
+# Source Code: https://github.com/CoReason-AI/coreason_assay
+
+import math
+from collections import defaultdict
+from typing import Dict, List, Union
+
+from coreason_assay.models import AggregateMetric, ReportCard, TestResult, TestRun
+
+
+def generate_report_card(run: TestRun, results: List[TestResult]) -> ReportCard:
+    """
+    Generates a ReportCard from a TestRun and its results.
+
+    Calculates:
+    - Global Pass Rate
+    - Average Execution Latency (raw execution time)
+    - Metric-specific aggregates (e.g. Average Faithfulness Score)
+    - Metric-specific Pass Rates
+
+    Args:
+        run: The TestRun object.
+        results: List of graded TestResults.
+
+    Returns:
+        ReportCard: The summarized report.
+    """
+    total_cases = len(results)
+    passed_cases = sum(1 for r in results if r.passed)
+    failed_cases = total_cases - passed_cases
+    pass_rate = (passed_cases / total_cases) if total_cases > 0 else 0.0
+
+    aggregates: List[AggregateMetric] = []
+
+    # Helper to clean values
+    def is_valid_number(n: Union[float, int]) -> bool:
+        return isinstance(n, (int, float)) and not math.isnan(n) and not math.isinf(n)
+
+    # 1. Global Latency Aggregate (Raw Execution Time)
+    latencies: List[float] = []
+    for r in results:
+        l_ms = r.metrics.get("latency_ms")
+        if l_ms is not None:
+            val = float(l_ms)
+            if is_valid_number(val):
+                latencies.append(val)
+
+    if latencies:
+        avg_latency = sum(latencies) / len(latencies)
+        aggregates.append(
+            AggregateMetric(
+                name="Average Execution Latency",
+                value=avg_latency,
+                unit="ms",
+                total_samples=len(latencies),
+            )
+        )
+
+    # 2. Score-specific Aggregates
+    # We group scores by name (e.g. "Faithfulness", "JsonSchema")
+    # For each name, we track: [list_of_values, passed_count, total_count]
+    # Use defaultdict for easier accumulation
+    score_stats: Dict[str, Dict[str, Union[List[float], int]]] = defaultdict(
+        lambda: {"values": [], "passed_count": 0, "total_count": 0}
+    )
+
+    for result in results:
+        for score in result.scores:
+            val = score.value
+            # Increment total count for this score dimension (regardless of value validity)
+            score_stats[score.name]["total_count"] += 1  # type: ignore
+
+            # For values, we store the raw value for averaging.
+            # Booleans are converted to 1.0/0.0 for average calculation.
+            numeric_val = val
+            if isinstance(val, bool):
+                numeric_val = 1.0 if val else 0.0
+
+            # Ensure we handle numeric conversion safely and filter nan/inf
+            if isinstance(numeric_val, (int, float)):
+                f_val = float(numeric_val)
+                if is_valid_number(f_val):
+                    score_stats[score.name]["values"].append(f_val)  # type: ignore
+
+            # Track passed count
+            if score.passed:
+                score_stats[score.name]["passed_count"] += 1  # type: ignore
+
+    for name, stats in score_stats.items():
+        values: List[float] = stats["values"]  # type: ignore
+        passed_count: int = stats["passed_count"]  # type: ignore
+        total_count: int = stats["total_count"]  # type: ignore
+
+        # 2a. Average Score (Only for valid numeric values)
+        if values:
+            avg_val = sum(values) / len(values)
+            aggregates.append(
+                AggregateMetric(
+                    name=f"Average {name} Score",
+                    value=avg_val,
+                    unit="score",
+                    total_samples=len(values),
+                )
+            )
+
+        # 2b. Pass Rate (Based on total occurrences of the score)
+        if total_count > 0:
+            metric_pass_rate = passed_count / total_count
+            aggregates.append(
+                AggregateMetric(
+                    name=f"{name} Pass Rate",
+                    value=metric_pass_rate,
+                    unit="ratio",
+                    total_samples=total_count,
+                )
+            )
+
+    return ReportCard(
+        run_id=run.id,
+        total_cases=total_cases,
+        passed_cases=passed_cases,
+        failed_cases=failed_cases,
+        pass_rate=pass_rate,
+        aggregates=aggregates,
+    )
