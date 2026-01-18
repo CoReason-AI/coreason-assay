@@ -179,10 +179,7 @@ class BECManager:
 
         # 2. Find Manifest
         # Candidates: .csv or .jsonl, excluding macOS artifacts
-        candidates = [
-            c for c in list(t_dir.rglob("*.csv")) + list(t_dir.rglob("*.jsonl"))
-            if "__MACOSX" not in c.parts
-        ]
+        candidates = [c for c in list(t_dir.rglob("*.csv")) + list(t_dir.rglob("*.jsonl")) if "__MACOSX" not in c.parts]
 
         if not candidates:
             raise ValueError("No manifest file (.csv or .jsonl) found in ZIP archive.")
@@ -230,9 +227,7 @@ class BECManager:
 
                 # Security Check
                 if not abs_path.is_relative_to(extraction_root_resolved):
-                    logger.warning(
-                        f"File path {file_ref} resolves to {abs_path} outside extraction dir. Rejecting."
-                    )
+                    logger.warning(f"File path {file_ref} resolves to {abs_path} outside extraction dir. Rejecting.")
                     raise ValueError(
                         f"Security Error: File path '{file_ref}' attempts to access outside the extraction directory."
                     )

@@ -38,11 +38,16 @@ def test_upload_success() -> None:
             [
                 "upload",
                 "dummy.zip",
-                "--project-id", "proj-1",
-                "--name", "Corpus 1",
-                "--version", "1.0",
-                "--author", "tester",
-                "--output", "out_dir",
+                "--project-id",
+                "proj-1",
+                "--name",
+                "Corpus 1",
+                "--version",
+                "1.0",
+                "--author",
+                "tester",
+                "--output",
+                "out_dir",
             ],
         )
 

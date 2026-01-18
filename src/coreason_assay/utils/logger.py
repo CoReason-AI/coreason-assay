@@ -11,36 +11,43 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from pathlib import Path
+from typing import Optional
 
 from coreason_assay.settings import settings
 
 # Create a custom logger
 logger = logging.getLogger("coreason_assay")
-logger.setLevel(settings.LOG_LEVEL)
 
-# Prevent duplicate logs if reload happens
-if not logger.handlers:
-    # Formatter
-    formatter = logging.Formatter(fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
 
-    # Console Handler (Stderr)
-    console_handler = logging.StreamHandler(sys.stderr)
-    console_handler.setFormatter(formatter)
-    logger.addHandler(console_handler)
+def setup_logger() -> None:
+    """Configures the logger. Idempotent."""
+    logger.setLevel(settings.LOG_LEVEL)
 
-    # File Handler
-    log_path = settings.LOG_FILE
-    # Ensure logs directory exists
-    if not log_path.parent.exists():
-        log_path.parent.mkdir(parents=True, exist_ok=True)
+    # Prevent duplicate logs if reload happens
+    if not logger.handlers:
+        # Formatter
+        formatter = logging.Formatter(fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
 
-    file_handler = RotatingFileHandler(
-        log_path, maxBytes=settings.LOG_MAX_BYTES, backupCount=settings.LOG_BACKUP_COUNT, encoding="utf-8"
-    )
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
+        # Console Handler (Stderr)
+        console_handler = logging.StreamHandler(sys.stderr)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
 
+        # File Handler
+        log_path = settings.LOG_FILE
+        # Ensure logs directory exists
+        if not log_path.parent.exists():
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_handler = RotatingFileHandler(
+            log_path, maxBytes=settings.LOG_MAX_BYTES, backupCount=settings.LOG_BACKUP_COUNT, encoding="utf-8"
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+
+# Initialize on import
+setup_logger()
 
 # Export logger
-__all__ = ["logger"]
+__all__ = ["logger", "setup_logger"]

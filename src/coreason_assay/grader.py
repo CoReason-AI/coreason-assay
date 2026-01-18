@@ -200,11 +200,7 @@ class ReasoningGrader(LLMGrader):
         formatted_steps = "\n".join([f"{i + 1}. {step}" for i, step in enumerate(required_steps)])
 
         # Use Template substitution
-        prompt = REASONING_GRADER_PROMPT.safe_substitute(
-            REQUIRED_STEPS=formatted_steps,
-            TRACE=trace,
-            TEXT=text
-        )
+        prompt = REASONING_GRADER_PROMPT.safe_substitute(REQUIRED_STEPS=formatted_steps, TRACE=trace, TEXT=text)
 
         try:
             analysis = self._get_llm_analysis(prompt)
@@ -365,10 +361,7 @@ class FaithfulnessGrader(LLMGrader):
             )
 
         # Use Template substitution
-        prompt = FAITHFULNESS_GRADER_PROMPT.safe_substitute(
-            CONTEXT=context_str,
-            ANSWER=answer_text
-        )
+        prompt = FAITHFULNESS_GRADER_PROMPT.safe_substitute(CONTEXT=context_str, ANSWER=answer_text)
 
         try:
             analysis = self._get_llm_analysis(prompt)
@@ -431,10 +424,7 @@ class ToneGrader(LLMGrader):
             )
 
         # Construct prompt
-        prompt = TONE_GRADER_PROMPT.safe_substitute(
-            TONE=expected_tone,
-            RESPONSE=text
-        )
+        prompt = TONE_GRADER_PROMPT.safe_substitute(TONE=expected_tone, RESPONSE=text)
 
         try:
             analysis = self._get_llm_analysis(prompt)

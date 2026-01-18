@@ -9,8 +9,6 @@
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
 from pathlib import Path
-from typing import Optional
-from uuid import UUID
 
 import typer
 from typing_extensions import Annotated
@@ -25,7 +23,7 @@ app = typer.Typer(
 
 
 @app.command()
-def hello():
+def hello() -> None:
     """
     Sanity check command.
     """
@@ -41,7 +39,7 @@ def upload(
     version: Annotated[str, typer.Option("--version", "-v", help="Version of the corpus")] = "1.0.0",
     created_by: Annotated[str, typer.Option("--author", "-a", help="Creator identifier")] = "cli_user",
     output_dir: Annotated[Path, typer.Option("--output", "-o", help="Extraction directory")] = Path("./data/extracted"),
-):
+) -> None:
     """
     Upload and digest a Benchmark Evaluation Corpus (BEC) from a ZIP file.
     """
@@ -58,7 +56,7 @@ def upload(
     except Exception as e:
         logger.exception("Failed to upload BEC")
         typer.secho(f"Error: {e}", fg=typer.colors.RED)
-        raise typer.Exit(code=1)
+        raise typer.Exit(code=1) from e  # pragma: no cover
 
 
 if __name__ == "__main__":
