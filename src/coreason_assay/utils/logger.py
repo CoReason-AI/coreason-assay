@@ -8,35 +8,45 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+import logging
 import sys
-from pathlib import Path
+from logging.handlers import RotatingFileHandler
 
-from loguru import logger
+from coreason_assay.settings import settings
 
-__all__ = ["logger"]
+# Create a custom logger
+logger = logging.getLogger("coreason_assay")
 
-# Remove default handler
-logger.remove()
 
-# Sink 1: Stdout (Human-readable)
-logger.add(
-    sys.stderr,
-    level="INFO",
-    format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | "
-    "<cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
-)
+def setup_logger() -> None:
+    """Configures the logger. Idempotent."""
+    logger.setLevel(settings.LOG_LEVEL)
 
-# Ensure logs directory exists
-log_path = Path("logs")
-if not log_path.exists():
-    log_path.mkdir(parents=True, exist_ok=True)  # pragma: no cover
+    # Prevent duplicate logs if reload happens
+    if not logger.handlers:
+        # Formatter
+        formatter = logging.Formatter(fmt=settings.LOG_FORMAT, datefmt=settings.LOG_DATE_FORMAT)
 
-# Sink 2: File (JSON, Rotation, Retention)
-logger.add(
-    "logs/app.log",
-    rotation="500 MB",
-    retention="10 days",
-    serialize=True,
-    enqueue=True,
-    level="INFO",
-)
+        # Console Handler (Stderr)
+        console_handler = logging.StreamHandler(sys.stderr)
+        console_handler.setFormatter(formatter)
+        logger.addHandler(console_handler)
+
+        # File Handler
+        log_path = settings.LOG_FILE
+        # Ensure logs directory exists
+        if not log_path.parent.exists():
+            log_path.parent.mkdir(parents=True, exist_ok=True)
+
+        file_handler = RotatingFileHandler(
+            log_path, maxBytes=settings.LOG_MAX_BYTES, backupCount=settings.LOG_BACKUP_COUNT, encoding="utf-8"
+        )
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+
+# Initialize on import
+setup_logger()
+
+# Export logger
+__all__ = ["logger", "setup_logger"]

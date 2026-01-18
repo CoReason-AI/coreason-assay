@@ -21,6 +21,7 @@ from coreason_assay.models import (
     TestCaseExpectation,
     TestCaseInput,
     TestCorpus,
+    TestResult,
     TestResultOutput,
     TestRun,
     TestRunStatus,
@@ -78,17 +79,17 @@ def basic_corpus() -> TestCorpus:
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 1"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 2"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="Case 3"),
-                expectations=TestCaseExpectation(text="Expected", schema_id=None, structure=None),
+                expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
         ],
     )
@@ -222,15 +223,22 @@ async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker:
     simulator = Simulator(runner)
 
     # Mock run_case to raise an exception *directly*, not returning a failed result.
-    # This simulates a crash that bypasses run_case's internal try/except block
-    # (e.g. if the method definition itself was somehow broken or asyncio failed).
-    # Since run_case is async, side_effect needs to raise.
-    mocker.patch.object(simulator, "run_case", side_effect=RuntimeError("Catastrophic Failure"))
+    # This simulates a crash that bypasses run_case's internal try/except block.
+    # We define a coroutine that raises when awaited.
+    async def broken_method(*args: Any, **kwargs: Any) -> TestResult:
+        raise RuntimeError("Catastrophic Failure")
+
+    mocker.patch.object(simulator, "run_case", side_effect=broken_method)
 
     test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
 
     # The fail-safe catches the error and continues.
-    # Since all tasks failed critically, results should be empty.
-    # In a real scenario, this would be logged as critical.
-    assert len(results) == 0
+    # We now expect robust failure results to be generated.
+    assert len(results) == 3
     assert test_run.status == TestRunStatus.DONE
+
+    for result in results:
+        assert result.passed is False
+        assert result.actual_output.trace is not None
+        assert "System Error" in result.actual_output.trace
+        assert "Catastrophic Failure" in result.actual_output.trace

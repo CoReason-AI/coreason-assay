@@ -55,7 +55,9 @@ def sample_test_case() -> TestCase:
     return TestCase(
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="Hello", context={"user": "test_user"}),
-        expectations=TestCaseExpectation(text="Hello back", schema_id=None, structure=None, tool_mocks={"db": "error"}),
+        expectations=TestCaseExpectation(
+            tone=None, text="Hello back", schema_id=None, structure=None, tool_mocks={"db": "error"}
+        ),
     )
 
 

@@ -8,6 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
@@ -47,6 +48,7 @@ class TestCaseExpectation(BaseModel):
         default_factory=dict,
         description="Specific mock options for tools during this test (e.g. error injection).",
     )
+    tone: Optional[str] = Field(None, description="Expected tone description (e.g. 'Professional and Empathetic').")
 
 
 class TestCase(BaseModel):
@@ -126,3 +128,78 @@ class TestResult(BaseModel):
     )
     scores: List[Score] = Field(default_factory=list, description="List of graded scores.")
     passed: bool = Field(..., description="Whether the test passed based on criteria.")
+
+
+class AggregateMetric(BaseModel):
+    """
+    Aggregated metric from a TestRun (e.g., Average Latency, Pass Rate).
+    """
+
+    name: str = Field(..., description="Name of the metric (e.g., 'Average Latency').")
+    value: float = Field(..., description="The calculated aggregate value.")
+    unit: Optional[str] = Field(None, description="Unit of measurement (e.g., 'ms', '%').")
+    total_samples: int = Field(..., description="Number of data points included in this aggregate.")
+
+
+class ReportCard(BaseModel):
+    """
+    The persistent result set summarizing a TestRun.
+    """
+
+    id: UUID = Field(default_factory=uuid4, description="Unique identifier for the report card.")
+    run_id: UUID = Field(..., description="ID of the TestRun this report belongs to.")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of generation."
+    )
+
+    # High-level stats
+    total_cases: int = Field(..., description="Total number of test cases in the run.")
+    passed_cases: int = Field(..., description="Number of cases that passed.")
+    failed_cases: int = Field(..., description="Number of cases that failed.")
+    pass_rate: float = Field(..., description="Global pass rate (0.0 to 1.0).")
+
+    # Granular aggregates
+    aggregates: List[AggregateMetric] = Field(default_factory=list, description="List of aggregated metrics.")
+
+
+class DriftMetric(BaseModel):
+    """
+    Represents the difference for a specific metric between two runs.
+    """
+
+    name: str = Field(..., description="Name of the metric (e.g., 'Average Latency').")
+    unit: Optional[str] = Field(None, description="Unit of measurement (e.g., 'ms', '%').")
+    current_value: float = Field(..., description="Value in the current run.")
+    previous_value: float = Field(..., description="Value in the previous run.")
+    delta: float = Field(..., description="Absolute difference (current - previous).")
+    pct_change: Optional[float] = Field(None, description="Percentage change relative to previous value (0.0 to 1.0+).")
+    is_regression: bool = Field(..., description="True if this change is considered negative/bad.")
+
+
+class CaseDrift(BaseModel):
+    """
+    Represents a regression for a specific test case.
+    """
+
+    case_id: UUID = Field(..., description="The ID of the test case.")
+    change_description: str = Field(
+        ..., description="Human readable description of the change (e.g. 'Passed -> Failed')."
+    )
+    is_regression: bool = Field(..., description="True if this change is considered negative/bad.")
+    # Optional: could include score deltas here too, but description might be enough for MVP
+
+
+class DriftReport(BaseModel):
+    """
+    A report comparing two Test Runs to identify regressions.
+    """
+
+    current_run_id: UUID = Field(..., description="ID of the current TestRun.")
+    previous_run_id: UUID = Field(..., description="ID of the previous TestRun.")
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), description="Timestamp of generation."
+    )
+    metrics: List[DriftMetric] = Field(default_factory=list, description="List of compared aggregated metrics.")
+    case_drifts: List[CaseDrift] = Field(
+        default_factory=list, description="List of specific test cases that drifted/regressed."
+    )
