@@ -8,17 +8,19 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
-REASONING_GRADER_PROMPT = """You are an expert evaluator of AI reasoning chains.
+from string import Template
+
+REASONING_GRADER_PROMPT = Template("""You are an expert evaluator of AI reasoning chains.
 Your task is to verify if the actual execution trace of an AI agent contains specific required reasoning steps.
 
 Required Reasoning Steps:
-__REQUIRED_STEPS__
+${REQUIRED_STEPS}
 
 Actual Execution Trace:
-__TRACE__
+${TRACE}
 
 (Fallback) Actual Output Text:
-__TEXT__
+${TEXT}
 
 Instructions:
 1. Analyze the trace (and text if trace is insufficient) to find evidence of each required step.
@@ -32,17 +34,17 @@ Instructions:
 }
 
 Return ONLY the JSON.
-"""
+""")
 
-FAITHFULNESS_GRADER_PROMPT = """You are an expert fact-checker for AI assistants.
+FAITHFULNESS_GRADER_PROMPT = Template("""You are an expert fact-checker for AI assistants.
 Your task is to verify if the AI's generated answer is supported by the provided Context.
 Does the Answer hallucinate information not present in the Context, or contradict it?
 
 Context:
-__CONTEXT__
+${CONTEXT}
 
 AI Answer:
-__ANSWER__
+${ANSWER}
 
 Instructions:
 1. Analyze the Answer against the Context.
@@ -54,16 +56,16 @@ Instructions:
 }
 
 Return ONLY the JSON.
-"""
+""")
 
-TONE_GRADER_PROMPT = """You are an expert tone analyzer for AI assistants.
+TONE_GRADER_PROMPT = Template("""You are an expert tone analyzer for AI assistants.
 Your task is to verify if the AI's response matches the expected tone.
 
 Expected Tone:
-__TONE__
+${TONE}
 
 AI Response:
-__RESPONSE__
+${RESPONSE}
 
 Instructions:
 1. Analyze the Response to see if it aligns with the Expected Tone.
@@ -75,4 +77,4 @@ Instructions:
 }
 
 Return ONLY the JSON.
-"""
+""")
