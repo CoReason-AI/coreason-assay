@@ -175,7 +175,7 @@ async def test_run_suite_taskgroup_crash(mocker: Any) -> None:
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="foo"),
-                expectations=TestCaseExpectation(),
+                expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
             )
         ],
     )
@@ -212,7 +212,7 @@ async def test_run_suite_error_result_creation_failure(mocker: Any) -> None:
             TestCase(
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(prompt="foo"),
-                expectations=TestCaseExpectation(),
+                expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
             )
         ],
     )
