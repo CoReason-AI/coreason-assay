@@ -262,7 +262,7 @@ def test_llm_grader_unexpected_json_schema() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="Answer", trace="Trace"),
+        actual_output=TestResultOutput(text="Answer", trace="Trace", structured_output=None),
         metrics={},
         scores=[],
         passed=True,
