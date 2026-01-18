@@ -38,9 +38,10 @@ def test_logger_mkdir_logic() -> None:
     """
     Test that the logger setup logic attempts to create the directory if it doesn't exist.
     """
-    with patch("coreason_assay.utils.logger.settings") as mock_settings, \
-         patch("coreason_assay.utils.logger.RotatingFileHandler") as mock_handler:
-
+    with (
+        patch("coreason_assay.utils.logger.settings") as mock_settings,
+        patch("coreason_assay.utils.logger.RotatingFileHandler") as mock_handler,
+    ):
         mock_path = MagicMock()
         mock_path.parent.exists.return_value = False
         mock_settings.LOG_FILE = mock_path

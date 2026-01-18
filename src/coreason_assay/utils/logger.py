@@ -11,7 +11,6 @@
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from typing import Optional
 
 from coreason_assay.settings import settings
 
