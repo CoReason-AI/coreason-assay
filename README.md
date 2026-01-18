@@ -2,9 +2,9 @@
 
 **The Scientific Testing Engine for AI Agents.**
 
-[![CI/CD](https://github.com/CoReason-AI/coreason_assay/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/CoReason-AI/coreason_assay/actions/workflows/ci-cd.yml)
-[![Docker](https://github.com/CoReason-AI/coreason_assay/actions/workflows/docker.yml/badge.svg)](https://github.com/CoReason-AI/coreason_assay/actions/workflows/docker.yml)
-[![codecov](https://codecov.io/gh/CoReason-AI/coreason_assay/graph/badge.svg)](https://codecov.io/gh/CoReason-AI/coreason_assay)
+[![CI/CD](https://github.com/CoReason-AI/coreason-assay/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/CoReason-AI/coreason-assay/actions/workflows/ci-cd.yml)
+[![Docker](https://github.com/CoReason-AI/coreason-assay/actions/workflows/docker.yml/badge.svg)](https://github.com/CoReason-AI/coreason-assay/actions/workflows/docker.yml)
+[![codecov](https://codecov.io/gh/CoReason-AI/coreason-assay/graph/badge.svg)](https://codecov.io/gh/CoReason-AI/coreason-assay)
 [![PyPI version](https://badge.fury.io/py/coreason_assay.svg)](https://badge.fury.io/py/coreason_assay)
 [![Python versions](https://img.shields.io/pypi/pyversions/coreason_assay.svg)](https://pypi.org/project/coreason_assay/)
 [![License](https://img.shields.io/badge/license-Prosperity--3.0-blue)](LICENSE)
