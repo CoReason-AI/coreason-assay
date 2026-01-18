@@ -122,11 +122,10 @@ class Simulator:
         completed_count = [0]
         total_cases = len(corpus.cases)
 
-        async def _run_and_track(case: TestCase) -> TestResult:
+        async def _run_and_track(case: TestCase) -> None:
+            # Note: returns None because it's a task. We shouldn't rely on return value in TaskGroup.
             try:
                 result = await self.run_case(case, test_run.id)
-                # We need to append to results here or collect them all at the end.
-                # Since TaskGroup waits for all, we can append here (list is thread-safe in asyncio single thread)
                 results.append(result)
 
                 completed_count[0] += 1
@@ -135,22 +134,38 @@ class Simulator:
                         await on_progress(completed_count[0], total_cases, result)
                     except Exception as e:
                         logger.error(f"Error in on_progress callback: {e}")
-
-                return result
             except Exception as e:
-                # Should not happen given run_case logic, but safe-guard
-                logger.critical(f"Critical error in case execution wrapper: {e}")
-                # Return a dummy failure result if possible or re-raise
-                # Since we are inside TaskGroup, exceptions here will cancel others unless handled.
-                # run_case swallows exceptions, so this block is for the tracking logic itself.
-                raise e
+                # Should not happen given run_case logic, but if run_case (or mocking) fails catastrophically:
+                logger.critical(f"Critical error in case execution wrapper for case {case.id}: {e}")
+                # We catch it here to prevent the TaskGroup from cancelling other tasks.
+                # However, we must ensure we record *something* in results if possible,
+                # or at least not leave the suite hanging.
+                # Since run_case failed, we create a synthetic failure result.
+                try:
+                    failed_output = TestResultOutput(
+                        text=None,
+                        trace=f"System Error: {str(e)}",
+                        structured_output=None
+                    )
+                    failed_result = TestResult(
+                        run_id=test_run.id,
+                        case_id=case.id,
+                        actual_output=failed_output,
+                        metrics={"latency_ms": 0},
+                        scores=[],
+                        passed=False
+                    )
+                    results.append(failed_result)
+                except Exception as creation_err:
+                    logger.critical(f"Failed to create error result: {creation_err}")
 
         try:
             async with asyncio.TaskGroup() as tg:
                 for case in corpus.cases:
                     tg.create_task(_run_and_track(case))
         except Exception as e:
-            # If the TaskGroup fails (e.g. KeyboardInterrupt or critical error)
+            # If the TaskGroup still fails (e.g. KeyboardInterrupt or we missed something),
+            # we mark the run as failed.
             logger.error(f"TestRun interrupted or failed: {e}")
             test_run.status = TestRunStatus.FAILED
             # We still return partial results

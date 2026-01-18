@@ -233,7 +233,12 @@ async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker:
     test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
 
     # The fail-safe catches the error and continues.
-    # Since all tasks failed critically, results should be empty.
-    # In a real scenario, this would be logged as critical.
-    assert len(results) == 0
+    # We now expect robust failure results to be generated.
+    assert len(results) == 3
     assert test_run.status == TestRunStatus.DONE
+
+    for result in results:
+        assert result.passed is False
+        assert result.actual_output.trace is not None
+        assert "System Error" in result.actual_output.trace
+        assert "Catastrophic Failure" in result.actual_output.trace
