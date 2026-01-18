@@ -21,7 +21,6 @@ from coreason_assay.models import (
     TestCaseExpectation,
     TestCaseInput,
     TestCorpus,
-    TestResult,
     TestResultOutput,
     TestRunStatus,
 )
@@ -107,18 +106,13 @@ async def test_simulator_mixed_workload_robustness() -> None:
     # 3 Slow OK
     # 2 Fast Fail
     # 2 Slow Fail
-    prompts = (
-        ["FAST_OK"] * 3
-        + ["SLOW_OK"] * 3
-        + ["FAST_FAIL"] * 2
-        + ["SLOW_FAIL"] * 2
-    )
+    prompts = ["FAST_OK"] * 3 + ["SLOW_OK"] * 3 + ["FAST_FAIL"] * 2 + ["SLOW_FAIL"] * 2
 
     cases = [
         TestCase(
             corpus_id=uuid4(),
             inputs=TestCaseInput(prompt=p),
-            expectations=TestCaseExpectation(),
+            expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
         )
         for p in prompts
     ]
@@ -146,7 +140,9 @@ async def test_simulator_mixed_workload_robustness() -> None:
     failures = [r for r in results if r.passed is False]
 
     # In this test, MixedBehaviorAgent raises inside invoke, so run_case catches it.
-    agent_failures = [r for r in failures if r.actual_output.trace and "Agent invocation failed" in r.actual_output.trace]
+    agent_failures = [
+        r for r in failures if r.actual_output.trace and "Agent invocation failed" in r.actual_output.trace
+    ]
 
     assert fast_ok_count == 3
     assert slow_ok_count == 3
