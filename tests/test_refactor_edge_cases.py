@@ -15,7 +15,8 @@ from uuid import uuid4
 
 import pytest
 
-from coreason_assay.interfaces import AgentRunner
+from coreason_assay.grader import ReasoningGrader
+from coreason_assay.interfaces import AgentRunner, LLMClient
 from coreason_assay.models import (
     TestCase,
     TestCaseExpectation,
@@ -236,3 +237,47 @@ async def test_run_suite_error_result_creation_failure(mocker: Any) -> None:
     assert len(results) == 0
     # The suite itself should finish (DONE) because the inner-inner try/except catches the creation error
     assert test_run.status == TestRunStatus.DONE
+
+
+# --- Tests for LLM Grader Edge Cases ---
+
+
+class MockLLM(LLMClient):
+    def __init__(self, response: str):
+        self.response = response
+
+    def complete(self, prompt: str) -> str:
+        return self.response
+
+
+def test_llm_grader_unexpected_json_schema() -> None:
+    """
+    Verifies that ReasoningGrader handles valid JSON that is missing expected keys.
+    """
+    # LLM returns valid JSON but total garbage schema
+    llm = MockLLM('{"random_key": "garbage", "status": "confused"}')
+    grader = ReasoningGrader(llm_client=llm)
+
+    # Dummy result and expectations
+    result = TestResult(
+        run_id=uuid4(),
+        case_id=uuid4(),
+        actual_output=TestResultOutput(text="Answer", trace="Trace"),
+        metrics={},
+        scores=[],
+        passed=True,
+    )
+    # Expect reasoning steps, so the grader runs
+    expectations = {"reasoning": ["Step 1"]}
+
+    score = grader.grade(result, expectations=expectations)
+
+    # Should gracefully default to 0.0 or fail
+    # The code: score_val_raw = analysis.get("score", 0.0)
+    assert score.value == 0.0
+    assert score.passed is False
+    # reasoning text is constructed from 'steps_analysis'.
+    # steps_analysis = analysis.get("steps_analysis", []) -> defaults to []
+    # reasoning_text = "\n".join(details) -> ""
+    # if not reasoning_text: reasoning_text = "LLM provided no detailed analysis."
+    assert score.reasoning == "LLM provided no detailed analysis."
