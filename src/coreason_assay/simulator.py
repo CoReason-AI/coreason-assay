@@ -117,35 +117,56 @@ class Simulator:
             test_run.status = TestRunStatus.DONE
             return test_run, results
 
-        # Create tasks for all cases
-        tasks = [self.run_case(case, test_run.id) for case in corpus.cases]
+        # Track completed cases for progress updates
+        # We use a list to be mutable inside the inner function (or nonlocal)
+        completed_count = [0]
+        total_cases = len(corpus.cases)
 
-        total_cases = len(tasks)
-        completed_cases = 0
-
-        # Execute concurrently and process as they complete
-        for future in asyncio.as_completed(tasks):
+        async def _run_and_track(case: TestCase) -> None:
+            # Note: returns None because it's a task. We shouldn't rely on return value in TaskGroup.
             try:
-                result = await future
+                result = await self.run_case(case, test_run.id)
+                results.append(result)
+
+                completed_count[0] += 1
+                if on_progress:
+                    try:
+                        await on_progress(completed_count[0], total_cases, result)
+                    except Exception as e:
+                        logger.error(f"Error in on_progress callback: {e}")
             except Exception as e:
-                # This catches errors in run_case itself (which already has a try/except),
-                # or task scheduling errors. This is the ultimate fail-safe.
-                logger.critical(f"Unexpected error in run_suite task execution: {e}")
-                # We can't identify the case ID easily here if future just crashed,
-                # but run_case is designed to be safe.
-                # If we get here, something is very wrong with the event loop or runner.
-                continue
-
-            results.append(result)
-            completed_cases += 1
-
-            if on_progress:
+                # Should not happen given run_case logic, but if run_case (or mocking) fails catastrophically:
+                logger.critical(f"Critical error in case execution wrapper for case {case.id}: {e}")
+                # We catch it here to prevent the TaskGroup from cancelling other tasks.
+                # However, we must ensure we record *something* in results if possible,
+                # or at least not leave the suite hanging.
+                # Since run_case failed, we create a synthetic failure result.
                 try:
-                    await on_progress(completed_cases, total_cases, result)
-                except Exception as e:
-                    logger.error(f"Error in on_progress callback: {e}")
+                    failed_output = TestResultOutput(text=None, trace=f"System Error: {str(e)}", structured_output=None)
+                    failed_result = TestResult(
+                        run_id=test_run.id,
+                        case_id=case.id,
+                        actual_output=failed_output,
+                        metrics={"latency_ms": 0},
+                        scores=[],
+                        passed=False,
+                    )
+                    results.append(failed_result)
+                except Exception as creation_err:
+                    logger.critical(f"Failed to create error result: {creation_err}")
+
+        try:
+            async with asyncio.TaskGroup() as tg:
+                for case in corpus.cases:
+                    tg.create_task(_run_and_track(case))
+        except Exception as e:
+            # If the TaskGroup fails (e.g. KeyboardInterrupt or critical error)
+            logger.error(f"TestRun interrupted or failed: {e}")
+            test_run.status = TestRunStatus.FAILED
+            # We still return partial results
+            return test_run, results
 
         test_run.status = TestRunStatus.DONE
-        logger.info(f"Completed TestRun {test_run.id}. {completed_cases}/{total_cases} cases processed.")
+        logger.info(f"Completed TestRun {test_run.id}. {completed_count[0]}/{total_cases} cases processed.")
 
         return test_run, results
