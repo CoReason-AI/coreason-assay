@@ -21,6 +21,7 @@ from coreason_assay.models import (
     TestCaseExpectation,
     TestCaseInput,
     TestCorpus,
+    TestResult,
     TestResultOutput,
     TestRunStatus,
 )
@@ -152,3 +153,86 @@ async def test_simulator_mixed_workload_robustness() -> None:
     error_texts = [r.actual_output.trace for r in agent_failures]
     assert any("Fast Crash" in t for t in error_texts if t)
     assert any("Slow Crash" in t for t in error_texts if t)
+
+
+# --- Tests for Coverage (Extreme Edge Cases) ---
+
+
+@pytest.mark.asyncio
+async def test_run_suite_taskgroup_crash(mocker: Any) -> None:
+    """
+    Verifies the branch where TaskGroup itself fails (e.g. at context entry/exit).
+    This covers lines 162-167 in simulator.py.
+    """
+    runner = MixedBehaviorAgent()
+    simulator = Simulator(runner)
+    corpus = TestCorpus(
+        project_id="p",
+        name="n",
+        version="v",
+        created_by="u",
+        cases=[
+            TestCase(
+                corpus_id=uuid4(),
+                inputs=TestCaseInput(prompt="foo"),
+                expectations=TestCaseExpectation(),
+            )
+        ],
+    )
+
+    # Mock asyncio.TaskGroup to raise when entering
+    # We need to mock it where it is imported/used.
+    # Since Simulator uses `asyncio.TaskGroup`, and it's built-in, we patch asyncio.TaskGroup.
+    # Note: asyncio.TaskGroup is available in 3.11+.
+    mock_tg_cls = mocker.patch("asyncio.TaskGroup")
+    mock_tg_instance = mock_tg_cls.return_value
+    mock_tg_instance.__aenter__.side_effect = RuntimeError("TaskGroup Boom")
+
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1")
+
+    assert test_run.status == TestRunStatus.FAILED
+    assert len(results) == 0
+
+
+@pytest.mark.asyncio
+async def test_run_suite_error_result_creation_failure(mocker: Any) -> None:
+    """
+    Verifies the branch where creating the 'System Error' TestResult fails
+    inside the exception handler.
+    This covers lines 155-156 in simulator.py.
+    """
+    runner = MixedBehaviorAgent()
+    simulator = Simulator(runner)
+    corpus = TestCorpus(
+        project_id="p",
+        name="n",
+        version="v",
+        created_by="u",
+        cases=[
+            TestCase(
+                corpus_id=uuid4(),
+                inputs=TestCaseInput(prompt="foo"),
+                expectations=TestCaseExpectation(),
+            )
+        ],
+    )
+
+    # 1. Force _run_and_track to hit the exception handler by making run_case raise.
+    #    (Normally run_case catches exceptions, so we must mock it to raise directly)
+    mocker.patch.object(simulator, "run_case", side_effect=RuntimeError("Inner Crash"))
+
+    # 2. Force TestResult creation to fail inside the handler.
+    #    We mock the TestResult class used in simulator.py
+    #    We must ensure we only mock it for the FAILURE creation, or global is fine
+    #    since we only expect one result.
+    mock_test_result_cls = mocker.patch("coreason_assay.simulator.TestResult")
+    mock_test_result_cls.side_effect = TypeError("Constructor Fail")
+
+    # Run
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1")
+
+    # Assertions
+    # We expect results to be empty because appending failed
+    assert len(results) == 0
+    # The suite itself should finish (DONE) because the inner-inner try/except catches the creation error
+    assert test_run.status == TestRunStatus.DONE
