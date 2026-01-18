@@ -8,6 +8,7 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+import logging
 from pathlib import Path
 
 from coreason_assay.utils.logger import logger
@@ -18,16 +19,17 @@ def test_logger_initialization() -> None:
     # Since the logger is initialized on import, we check side effects
 
     # Check if logs directory creation is handled
-    # Note: running this test might actually create the directory in the test environment
-    # if it doesn't exist.
+    # The new logger implementation uses settings to determine the path
+    from coreason_assay.settings import settings
+    log_path = settings.LOG_FILE.parent
 
-    log_path = Path("logs")
     assert log_path.exists()
     assert log_path.is_dir()
 
-    # Verify app.log creation if it was logged to (it might be empty or not created until log)
-    # logger.info("Test log")
-    # assert (log_path / "app.log").exists()
+    # Verify usage
+    assert isinstance(logger, logging.Logger)
+    assert logger.name == "coreason_assay"
+    assert len(logger.handlers) >= 1
 
 
 def test_logger_exports() -> None:

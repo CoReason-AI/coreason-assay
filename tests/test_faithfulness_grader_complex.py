@@ -146,8 +146,10 @@ def test_prompt_variable_collision(
     mock_llm_client: MockLLMClient,
     faithfulness_grader: FaithfulnessGrader,
 ) -> None:
-    # Context containing the string "__ANSWER__"
-    context = {"secret": "The value is __ANSWER__"}
+    # Context containing the placeholder string
+    # We test if the templating engine recursively substitutes (it shouldn't)
+    # The new implementation uses ${ANSWER} instead of __ANSWER__
+    context = {"secret": "The value is ${ANSWER}"}
     inputs = TestCaseInput(prompt="foo", context=context)
 
     result = TestResult(
@@ -170,8 +172,13 @@ def test_prompt_variable_collision(
 
     prompt = mock_llm_client.calls[0]
 
-    # Collision happens with current implementation
-    assert "The value is REAL_ANSWER" in prompt
+    # Recursive substitution should NOT happen with string.Template
+    assert "The value is REAL_ANSWER" not in prompt
+
+    # Depending on json.dumps escaping, ${ANSWER} might be present verbatim
+    # or escaped if keys were escaped, but values are strings.
+    # "The value is ${ANSWER}" should appear.
+    assert "The value is ${ANSWER}" in prompt
 
 
 def test_adversarial_answer(
