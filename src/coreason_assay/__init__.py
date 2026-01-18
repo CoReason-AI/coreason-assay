@@ -6,7 +6,7 @@
 # For details, see the LICENSE file.
 # Commercial use beyond a 30-day trial requires a separate license.
 #
-# Source Code: https://github.com/CoReason-AI/coreason_assay
+# Source Code: https://github.com/CoReason-AI/coreason-assay
 
 """
 Quality Control (QC) laboratory of the CoReason platform
