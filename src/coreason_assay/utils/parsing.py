@@ -9,7 +9,7 @@
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
 import json
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 
 def parse_json_from_llm_response(response_text: str) -> Dict[str, Any]:
@@ -36,4 +36,4 @@ def parse_json_from_llm_response(response_text: str) -> Dict[str, Any]:
     if cleaned_response.endswith("```"):
         cleaned_response = cleaned_response[:-3]
 
-    return json.loads(cleaned_response.strip())
+    return cast(Dict[str, Any], json.loads(cleaned_response.strip()))

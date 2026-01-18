@@ -142,18 +142,14 @@ class Simulator:
                 # or at least not leave the suite hanging.
                 # Since run_case failed, we create a synthetic failure result.
                 try:
-                    failed_output = TestResultOutput(
-                        text=None,
-                        trace=f"System Error: {str(e)}",
-                        structured_output=None
-                    )
+                    failed_output = TestResultOutput(text=None, trace=f"System Error: {str(e)}", structured_output=None)
                     failed_result = TestResult(
                         run_id=test_run.id,
                         case_id=case.id,
                         actual_output=failed_output,
                         metrics={"latency_ms": 0},
                         scores=[],
-                        passed=False
+                        passed=False,
                     )
                     results.append(failed_result)
                 except Exception as creation_err:
@@ -164,8 +160,7 @@ class Simulator:
                 for case in corpus.cases:
                     tg.create_task(_run_and_track(case))
         except Exception as e:
-            # If the TaskGroup still fails (e.g. KeyboardInterrupt or we missed something),
-            # we mark the run as failed.
+            # If the TaskGroup fails (e.g. KeyboardInterrupt or critical error)
             logger.error(f"TestRun interrupted or failed: {e}")
             test_run.status = TestRunStatus.FAILED
             # We still return partial results
