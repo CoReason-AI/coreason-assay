@@ -100,7 +100,7 @@ def test_run_assay_no_deps(mock_run_suite: AsyncMock) -> None:
         "cases": [],
     }
 
-    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {}}
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "run_by": "tester", "graders": {}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 503
@@ -136,6 +136,7 @@ async def test_run_assay_success(
     payload = {
         "corpus": corpus_data,
         "agent_version": "1.0.0",
+        "run_by": "tester",
         "graders": {"Latency": {"threshold_ms": 2000.0}, "Faithfulness": {}},
     }
 
@@ -169,7 +170,7 @@ def test_run_assay_error(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock
         "cases": [],
     }
 
-    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {}}
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "run_by": "tester", "graders": {}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 500
@@ -202,6 +203,7 @@ async def test_run_assay_all_graders(
     payload = {
         "corpus": corpus_data,
         "agent_version": "1.0.0",
+        "run_by": "tester",
         "graders": {
             "JsonSchema": {},
             "ForbiddenContent": {},
@@ -237,7 +239,7 @@ def test_run_assay_unknown_grader(mock_run_suite: AsyncMock, mock_agent_runner: 
         "cases": [],
     }
 
-    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"UnknownThing": {}}}
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "run_by": "tester", "graders": {"UnknownThing": {}}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 200
@@ -259,7 +261,12 @@ def test_run_assay_invalid_grader_config(mock_run_suite: AsyncMock, mock_agent_r
     }
 
     # LatencyGrader takes threshold_ms (float), passing unexpected arg
-    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Latency": {"invalid_arg": 1}}}
+    payload = {
+        "corpus": corpus_data,
+        "agent_version": "1.0.0",
+        "run_by": "tester",
+        "graders": {"Latency": {"invalid_arg": 1}},
+    }
 
     response = client.post("/run", json=payload)
     assert response.status_code == 400
@@ -279,13 +286,18 @@ def test_run_assay_missing_llm_client_variants(mock_run_suite: AsyncMock, mock_a
     }
 
     # Test Reasoning
-    payload_reasoning = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Reasoning": {}}}
+    payload_reasoning = {
+        "corpus": corpus_data,
+        "agent_version": "1.0.0",
+        "run_by": "tester",
+        "graders": {"Reasoning": {}},
+    }
     resp = client.post("/run", json=payload_reasoning)
     assert resp.status_code == 503
     assert "LLMClient" in resp.json()["detail"]
 
     # Test Tone
-    payload_tone = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Tone": {}}}
+    payload_tone = {"corpus": corpus_data, "agent_version": "1.0.0", "run_by": "tester", "graders": {"Tone": {}}}
     resp = client.post("/run", json=payload_tone)
     assert resp.status_code == 503
     assert "LLMClient" in resp.json()["detail"]
@@ -304,7 +316,7 @@ def test_run_assay_missing_llm_client(mock_run_suite: AsyncMock, mock_agent_runn
         "cases": [],
     }
 
-    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Faithfulness": {}}}
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "run_by": "tester", "graders": {"Faithfulness": {}}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 503

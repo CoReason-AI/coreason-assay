@@ -22,6 +22,7 @@ except ImportError:
     # Mock for development/CI where the private package isn't available
     class UserContext(BaseModel):  # type: ignore
         user_id: str = Field(..., description="User ID")
+        email: str = Field(..., description="Email")
         groups: List[str] = Field(default_factory=list, description="Groups")
 
 
@@ -98,7 +99,7 @@ def upload_corpus(
 
     try:
         # In a real scenario, author/UserContext would be derived from the auth token
-        user_context = UserContext(user_id=author)
+        user_context = UserContext(user_id=author, email=f"{author}@example.com")
         corpus = upload_bec(
             file_path=zip_path,
             extraction_dir=extraction_dir,
@@ -150,7 +151,7 @@ async def run_assay(request: RunRequest) -> ReportCard:
             raise HTTPException(status_code=400, detail=f"Invalid configuration for grader {name}: {e}") from e
 
     try:
-        user_context = UserContext(user_id=request.run_by)
+        user_context = UserContext(user_id=request.run_by, email=f"{request.run_by}@example.com")
         report = await run_suite(
             corpus=request.corpus,
             agent_runner=_agent_runner,

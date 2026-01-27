@@ -19,6 +19,7 @@ except ImportError:
     # Mock for development/CI where the private package isn't available
     class UserContext(BaseModel):  # type: ignore
         user_id: str = Field(..., description="User ID")
+        email: str = Field(..., description="Email")
         groups: List[str] = Field(default_factory=list, description="Groups")
 
 
@@ -32,7 +33,8 @@ def get_cli_context() -> UserContext:
     """
     # 1. Check for specific environment variables (e.g. from CI/CD)
     user_id = os.getenv("COREASON_USER_ID", os.getenv("USER", "unknown_user"))
+    email = os.getenv("COREASON_USER_EMAIL", f"{user_id}@example.com")
 
     # 2. In the future, decode a JWT or reading ~/.coreason/credentials
 
-    return UserContext(user_id=user_id, groups=["cli_users"])
+    return UserContext(user_id=user_id, email=email, groups=["cli_users"])

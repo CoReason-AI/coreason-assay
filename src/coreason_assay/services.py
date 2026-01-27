@@ -19,6 +19,7 @@ except ImportError:
     # Mock for development/CI where the private package isn't available
     class UserContext(BaseModel):  # type: ignore
         user_id: str = Field(..., description="User ID")
+        email: str = Field(..., description="Email")
         groups: List[str] = Field(default_factory=list, description="Groups")
 
 
