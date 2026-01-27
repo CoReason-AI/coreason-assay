@@ -11,23 +11,23 @@
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Annotated
+from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
-from coreason_assay.services import upload_bec, run_suite
-from coreason_assay.models import TestCorpus, ReportCard
-from coreason_assay.interfaces import AgentRunner, LLMClient
 from coreason_assay.grader import (
     BaseGrader,
-    LatencyGrader,
-    JsonSchemaGrader,
-    ForbiddenContentGrader,
-    ReasoningGrader,
     FaithfulnessGrader,
+    ForbiddenContentGrader,
+    JsonSchemaGrader,
+    LatencyGrader,
+    ReasoningGrader,
     ToneGrader,
 )
+from coreason_assay.interfaces import AgentRunner, LLMClient
+from coreason_assay.models import ReportCard, TestCorpus
+from coreason_assay.services import run_suite, upload_bec
 from coreason_assay.utils.logger import logger
 
 app = FastAPI(title="CoReason Assay Service", version="0.2.0")
@@ -48,18 +48,18 @@ def set_dependencies(runner: AgentRunner, llm_client: LLMClient) -> None:
     logger.info("Dependencies injected into Assessment Engine.")
 
 
-class RunRequest(BaseModel):
+class RunRequest(BaseModel):  # type: ignore[misc]
     corpus: TestCorpus
     agent_version: str
     graders: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
 
-@app.get("/health")
+@app.get("/health")  # type: ignore[misc]
 def health() -> Dict[str, str]:
     return {"status": "healthy", "service": "coreason-assay", "version": "0.2.0"}
 
 
-@app.post("/upload", response_model=TestCorpus)
+@app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
 def upload_corpus(
     file: Annotated[UploadFile, File(...)],
     project_id: Annotated[str, Form(...)],
@@ -98,10 +98,10 @@ def upload_corpus(
         return corpus
     except Exception as e:
         logger.exception("Failed to upload/ingest corpus")
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post("/run", response_model=ReportCard)
+@app.post("/run", response_model=ReportCard)  # type: ignore[misc]
 async def run_assay(request: RunRequest) -> ReportCard:
     """
     Executes the assay for the provided corpus and agent version.
@@ -134,8 +134,8 @@ async def run_assay(request: RunRequest) -> ReportCard:
             else:
                 logger.warning(f"Unknown grader requested: {name}")
         except TypeError as e:
-             # Handle invalid config args
-             raise HTTPException(status_code=400, detail=f"Invalid configuration for grader {name}: {e}")
+            # Handle invalid config args
+            raise HTTPException(status_code=400, detail=f"Invalid configuration for grader {name}: {e}") from e
 
     try:
         report = await run_suite(
@@ -147,4 +147,4 @@ async def run_assay(request: RunRequest) -> ReportCard:
         return report
     except Exception as e:
         logger.exception("Failed to run assay")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e

@@ -1,65 +1,60 @@
 # Copyright (c) 2025 CoReason, Inc.
 
-import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, AsyncMock
-from typing import cast
+from typing import cast, Any
+from unittest.mock import AsyncMock, MagicMock
+from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
 
-from coreason_assay.server import app, set_dependencies
-from coreason_assay.models import TestCorpus, ReportCard, AggregateMetric
 from coreason_assay.interfaces import AgentRunner, LLMClient
+from coreason_assay.models import AggregateMetric, ReportCard, TestCorpus
+from coreason_assay.server import app, set_dependencies
 
 client = TestClient(app)
 
-@pytest.fixture
-def mock_upload_bec(mocker):
+
+@pytest.fixture  # type: ignore[misc]
+def mock_upload_bec(mocker: Any) -> MagicMock:
     # Mock services.upload_bec
     # Use cast to satisfy mypy strict checks on mocks
     return cast(MagicMock, mocker.patch("coreason_assay.server.upload_bec"))
 
-@pytest.fixture
-def mock_run_suite(mocker):
+
+@pytest.fixture  # type: ignore[misc]
+def mock_run_suite(mocker: Any) -> AsyncMock:
     # Mock services.run_suite
     # run_suite is async, so we need an async mock
     mock = AsyncMock()
     mocker.patch("coreason_assay.server.run_suite", side_effect=mock)
     return mock
 
-@pytest.fixture
-def mock_agent_runner():
+
+@pytest.fixture  # type: ignore[misc]
+def mock_agent_runner() -> MagicMock:
     return MagicMock(spec=AgentRunner)
 
-@pytest.fixture
-def mock_llm_client():
+
+@pytest.fixture  # type: ignore[misc]
+def mock_llm_client() -> MagicMock:
     return MagicMock(spec=LLMClient)
 
-def test_health():
+
+def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
     assert response.json() == {"status": "healthy", "service": "coreason-assay", "version": "0.2.0"}
 
-def test_upload_corpus(mock_upload_bec):
+
+def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
     # Mock return value
-    mock_corpus = TestCorpus(
-        project_id="p1",
-        name="test",
-        version="v1",
-        created_by="me",
-        cases=[]
-    )
+    mock_corpus = TestCorpus(project_id="p1", name="test", version="v1", created_by="me", cases=[])
     mock_upload_bec.return_value = mock_corpus
 
     # Prepare file upload
     files = {"file": ("corpus.zip", b"fake zip content", "application/zip")}
-    data = {
-        "project_id": "p1",
-        "name": "test",
-        "version": "v1",
-        "author": "me"
-    }
+    data = {"project_id": "p1", "name": "test", "version": "v1", "author": "me"}
 
     response = client.post("/upload", files=files, data=data)
 
@@ -77,10 +72,11 @@ def test_upload_corpus(mock_upload_bec):
     # No, in my implementation I keep it.
     assert file_path.exists()
 
-def test_run_assay_no_deps(mock_run_suite):
+
+def test_run_assay_no_deps(mock_run_suite: AsyncMock) -> None:
     # Dependencies not set, should fail
     # We must reset deps because they are global
-    set_dependencies(None, None) # type: ignore
+    set_dependencies(None, None)  # type: ignore
 
     corpus_data = {
         "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -88,31 +84,30 @@ def test_run_assay_no_deps(mock_run_suite):
         "name": "test",
         "version": "v1",
         "created_by": "me",
-        "cases": []
+        "cases": [],
     }
 
-    payload = {
-        "corpus": corpus_data,
-        "agent_version": "1.0.0",
-        "graders": {}
-    }
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 503
     assert "AgentRunner not initialized" in response.json()["detail"]
 
-@pytest.mark.asyncio
-async def test_run_assay_success(mock_run_suite, mock_agent_runner, mock_llm_client):
+
+@pytest.mark.asyncio  # type: ignore[misc]
+async def test_run_assay_success(
+    mock_run_suite: AsyncMock, mock_agent_runner: MagicMock, mock_llm_client: MagicMock
+) -> None:
     # Set dependencies
     set_dependencies(mock_agent_runner, mock_llm_client)
 
     mock_report = ReportCard(
-        run_id="123e4567-e89b-12d3-a456-426614174001",
+        run_id=uuid4(),
         total_cases=10,
         passed_cases=9,
         failed_cases=1,
         pass_rate=0.9,
-        aggregates=[AggregateMetric(name="Avg Latency", value=100.0, total_samples=10)]
+        aggregates=[AggregateMetric(name="Avg Latency", value=100.0, total_samples=10, unit="ms")],
     )
     mock_run_suite.return_value = mock_report
 
@@ -122,16 +117,13 @@ async def test_run_assay_success(mock_run_suite, mock_agent_runner, mock_llm_cli
         "name": "test",
         "version": "v1",
         "created_by": "me",
-        "cases": []
+        "cases": [],
     }
 
     payload = {
         "corpus": corpus_data,
         "agent_version": "1.0.0",
-        "graders": {
-            "Latency": {"threshold_ms": 2000.0},
-            "Faithfulness": {}
-        }
+        "graders": {"Latency": {"threshold_ms": 2000.0}, "Faithfulness": {}},
     }
 
     response = client.post("/run", json=payload)
@@ -150,9 +142,10 @@ async def test_run_assay_success(mock_run_suite, mock_agent_runner, mock_llm_cli
     assert "LatencyGrader" in grader_names
     assert "FaithfulnessGrader" in grader_names
 
-def test_run_assay_missing_llm_client(mock_run_suite, mock_agent_runner):
+
+def test_run_assay_missing_llm_client(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
     # Set only agent runner
-    set_dependencies(mock_agent_runner, None) # type: ignore
+    set_dependencies(mock_agent_runner, None)  # type: ignore
 
     corpus_data = {
         "id": "123e4567-e89b-12d3-a456-426614174000",
@@ -160,16 +153,10 @@ def test_run_assay_missing_llm_client(mock_run_suite, mock_agent_runner):
         "name": "test",
         "version": "v1",
         "created_by": "me",
-        "cases": []
+        "cases": [],
     }
 
-    payload = {
-        "corpus": corpus_data,
-        "agent_version": "1.0.0",
-        "graders": {
-            "Faithfulness": {}
-        }
-    }
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Faithfulness": {}}}
 
     response = client.post("/run", json=payload)
     assert response.status_code == 503
