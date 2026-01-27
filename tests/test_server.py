@@ -15,14 +15,14 @@ from coreason_assay.server import app, set_dependencies
 client = TestClient(app)
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def mock_upload_bec(mocker: Any) -> MagicMock:
     # Mock services.upload_bec
     # Use cast to satisfy mypy strict checks on mocks
     return cast(MagicMock, mocker.patch("coreason_assay.server.upload_bec"))
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def mock_run_suite(mocker: Any) -> AsyncMock:
     # Mock services.run_suite
     # run_suite is async, so we need an async mock
@@ -31,12 +31,12 @@ def mock_run_suite(mocker: Any) -> AsyncMock:
     return mock
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def mock_agent_runner() -> MagicMock:
     return MagicMock(spec=AgentRunner)
 
 
-@pytest.fixture  # type: ignore[misc]
+@pytest.fixture
 def mock_llm_client() -> MagicMock:
     return MagicMock(spec=LLMClient)
 
@@ -94,7 +94,7 @@ def test_run_assay_no_deps(mock_run_suite: AsyncMock) -> None:
     assert "AgentRunner not initialized" in response.json()["detail"]
 
 
-@pytest.mark.asyncio  # type: ignore[misc]
+@pytest.mark.asyncio
 async def test_run_assay_success(
     mock_run_suite: AsyncMock, mock_agent_runner: MagicMock, mock_llm_client: MagicMock
 ) -> None:

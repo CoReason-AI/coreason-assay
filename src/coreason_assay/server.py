@@ -48,7 +48,7 @@ def set_dependencies(runner: AgentRunner, llm_client: LLMClient) -> None:
     logger.info("Dependencies injected into Assessment Engine.")
 
 
-class RunRequest(BaseModel):  # type: ignore[misc]
+class RunRequest(BaseModel):
     corpus: TestCorpus
     agent_version: str
     graders: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
