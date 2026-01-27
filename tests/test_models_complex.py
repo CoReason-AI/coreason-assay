@@ -117,7 +117,7 @@ class TestModelsComplex:
         Edge Case: Test invalid values for Enums.
         """
         # Valid status
-        run = TestRun(corpus_version="1.0", agent_draft_version="v1", status=TestRunStatus.FAILED)
+        run = TestRun(corpus_version="1.0", agent_draft_version="v1", run_by="tester", status=TestRunStatus.FAILED)
         assert run.status == TestRunStatus.FAILED
 
         # Invalid status via string injection (should fail validation)
@@ -125,6 +125,7 @@ class TestModelsComplex:
             TestRun(
                 corpus_version="1.0",
                 agent_draft_version="v1",
+                run_by="tester",
                 status="RunningFast",  # type: ignore
             )
         assert "Input should be 'Running', 'Done' or 'Failed'" in str(excinfo.value)

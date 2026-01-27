@@ -107,7 +107,7 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
         expectations=TestCaseExpectation(tone=None, text=None, schema_id=None, structure=None),
     )
     corpus = TestCorpus(project_id="p", name="c", version="v", created_by="u", cases=[case])
-    run_obj = TestRun(corpus_version="v", agent_draft_version="v", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v", agent_draft_version="v", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -117,7 +117,7 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
     )
 
     # Simulator returns result
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, run_by: Any, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -127,7 +127,7 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
     grader = ContextSensitiveGrader()
     engine = AssessmentEngine(simulator=mock_simulator, graders=[grader])
 
-    await engine.run_assay(corpus, "v")
+    await engine.run_assay(corpus, "v", run_by="tester")
 
     assert len(result_obj.scores) == 1
     score = result_obj.scores[0]
@@ -150,7 +150,7 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
         expectations=TestCaseExpectation(tone=None, text=None, schema_id=None, structure=None),
     )
     corpus = TestCorpus(project_id="p", name="c", version="v", created_by="u", cases=[case])
-    run_obj = TestRun(corpus_version="v", agent_draft_version="v", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v", agent_draft_version="v", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -159,10 +159,10 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
         passed=False,
     )
 
-    mock_simulator.run_suite.side_effect = lambda c, a, p: (run_obj, [result_obj])
+    mock_simulator.run_suite.side_effect = lambda c, a, r, p: (run_obj, [result_obj])
 
     # Note: We need to trigger the callback manually or simulate it
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, run_by: Any, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -173,7 +173,7 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
     graders = [MutatingGrader(), ReadingGrader()]
     engine = AssessmentEngine(simulator=mock_simulator, graders=graders)
 
-    await engine.run_assay(corpus, "v")
+    await engine.run_assay(corpus, "v", run_by="tester")
 
     assert len(result_obj.scores) == 2
     mutator_score = result_obj.scores[0]

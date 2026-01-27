@@ -22,6 +22,7 @@ def test_generate_report_card_basic() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 
@@ -88,6 +89,7 @@ def test_generate_report_card_empty() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 
@@ -106,6 +108,7 @@ def test_generate_report_card_boolean_scores() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
     )
 
     r1 = TestResult(
@@ -138,6 +141,7 @@ def test_generate_report_card_missing_latency() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
     )
 
     r1 = TestResult(

@@ -59,8 +59,17 @@ def test_upload_bec_propagates_error(mock_bec_manager: MagicMock, tmp_path: Any)
     zip_path = tmp_path / "bad.zip"
     zip_path.touch()
 
+    mock_context = MagicMock()
+    mock_context.user_id = "u"
     with pytest.raises(ValueError, match="Invalid ZIP"):
-        upload_bec(file_path=zip_path, extraction_dir=tmp_path, project_id="p", name="n", version="v", created_by="u")
+        upload_bec(
+            file_path=zip_path,
+            extraction_dir=tmp_path,
+            project_id="p",
+            name="n",
+            version="v",
+            user_context=mock_context,
+        )
 
 
 @pytest.mark.asyncio
@@ -75,7 +84,15 @@ async def test_run_suite_empty_corpus(mock_engine: MagicMock) -> None:
     # Fix: Ensure run_assay is an AsyncMock that returns the expected report
     mock_engine.return_value.run_assay = AsyncMock(return_value=expected_report)
 
-    report = await run_suite(corpus=corpus, agent_runner=mock_runner, agent_draft_version="v1", graders=[])
+    mock_context = MagicMock()
+    mock_context.user_id = "u"
+    report = await run_suite(
+        corpus=corpus,
+        agent_runner=mock_runner,
+        agent_draft_version="v1",
+        graders=[],
+        user_context=mock_context,
+    )
 
     assert report.total_cases == 0
     assert report.pass_rate == 0.0
@@ -108,11 +125,18 @@ async def test_run_suite_callback_error_resilience(mock_engine: MagicMock) -> No
         return_value=ReportCard(run_id=uuid4(), total_cases=0, passed_cases=0, failed_cases=0, pass_rate=0.0)
     )
 
+    mock_context = MagicMock()
+    mock_context.user_id = "u"
     await run_suite(
-        corpus=corpus, agent_runner=mock_runner, agent_draft_version="v1", graders=[], on_progress=bad_callback
+        corpus=corpus,
+        agent_runner=mock_runner,
+        agent_draft_version="v1",
+        graders=[],
+        user_context=mock_context,
+        on_progress=bad_callback,
     )
 
     # Check that bad_callback was passed to run_assay
     mock_engine.return_value.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="v1", on_progress=bad_callback
+        corpus=corpus, agent_draft_version="v1", run_by="u", on_progress=bad_callback
     )

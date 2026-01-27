@@ -33,6 +33,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
         id=card.run_id,
         corpus_version="v1.0",
         agent_draft_version="draft",
+        run_by="tester",
     )
     # We can't easily reconstruct individual results from aggregates perfectly,
     # but for these tests we only care about the aggregates calculation which

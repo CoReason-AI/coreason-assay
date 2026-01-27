@@ -21,6 +21,7 @@ except ImportError:
         user_id: str = Field(..., description="User ID")
         groups: List[str] = Field(default_factory=list, description="Groups")
 
+
 from coreason_assay.bec_manager import BECManager
 from coreason_assay.engine import AssessmentEngine
 from coreason_assay.grader import BaseGrader

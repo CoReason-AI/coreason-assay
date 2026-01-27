@@ -33,6 +33,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
         id=card.run_id,
         corpus_version="v1.0",
         agent_draft_version="draft",
+        run_by="tester",
     )
 
     results = []
@@ -117,7 +118,7 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
     # We construct results that produce the metrics we want.
 
     # Run 1
-    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1")
+    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1", run_by="tester")
     results1 = []
     for _ in range(10):
         # Latency Compliance (Higher is Better)
@@ -133,7 +134,7 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
         results1.append(r)
 
     # Run 2
-    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2")
+    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2", run_by="tester")
     results2 = []
     for _ in range(10):
         r = TestResult(
@@ -166,7 +167,7 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
     """
     Test that metrics present in previous but missing in current are ignored.
     """
-    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1")
+    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1", run_by="tester")
     results1 = [
         TestResult(
             run_id=run_id_1,
@@ -178,7 +179,7 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
         for _ in range(10)
     ]
 
-    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2")
+    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2", run_by="tester")
     results2 = [
         TestResult(
             run_id=run_id_2,
@@ -202,7 +203,7 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
     """
     Test that tiny changes (floating point noise) are ignored.
     """
-    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1")
+    run1 = TestRun(id=run_id_1, corpus_version="v1.0", agent_draft_version="d1", run_by="tester")
     results1 = [
         TestResult(
             run_id=run_id_1,
@@ -215,7 +216,7 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
     ]
 
     tiny_delta = 1e-10
-    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2")
+    run2 = TestRun(id=run_id_2, corpus_version="v1.0", agent_draft_version="d2", run_by="tester")
     results2 = [
         TestResult(
             run_id=run_id_2,

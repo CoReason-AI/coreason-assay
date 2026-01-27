@@ -94,7 +94,7 @@ async def test_run_suite_mixed_workload() -> None:
     runner = SpyAgentRunner()
     simulator = Simulator(runner)
 
-    test_run, results = await simulator.run_suite(corpus, agent_draft_version="v1")
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="v1", run_by="tester")
 
     assert test_run.status == TestRunStatus.DONE
     assert len(results) == case_count
@@ -162,7 +162,7 @@ async def test_run_suite_context_isolation() -> None:
     # Randomize order in which they might finish by having random delays in the runner?
     # SpyAgentRunner defaults to fast, but context check is robust regardless of order.
 
-    await simulator.run_suite(corpus, agent_draft_version="v1")
+    await simulator.run_suite(corpus, agent_draft_version="v1", run_by="tester")
 
     assert len(runner.invocations) == case_count
 

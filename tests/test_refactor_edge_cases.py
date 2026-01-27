@@ -127,7 +127,7 @@ async def test_simulator_mixed_workload_robustness() -> None:
         cases=cases,
     )
 
-    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1")
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1", run_by="tester")
 
     # Verify Run Status
     assert test_run.status == TestRunStatus.DONE
@@ -189,7 +189,7 @@ async def test_run_suite_taskgroup_crash(mocker: Any) -> None:
     mock_tg_instance = mock_tg_cls.return_value
     mock_tg_instance.__aenter__.side_effect = RuntimeError("TaskGroup Boom")
 
-    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1")
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1", run_by="tester")
 
     assert test_run.status == TestRunStatus.FAILED
     assert len(results) == 0
@@ -230,7 +230,7 @@ async def test_run_suite_error_result_creation_failure(mocker: Any) -> None:
     mock_test_result_cls.side_effect = TypeError("Constructor Fail")
 
     # Run
-    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1")
+    test_run, results = await simulator.run_suite(corpus, agent_draft_version="0.1", run_by="tester")
 
     # Assertions
     # We expect results to be empty because appending failed

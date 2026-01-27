@@ -25,6 +25,7 @@ def test_mixed_score_types() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 
@@ -72,6 +73,7 @@ def test_nan_inf_handling() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 
@@ -127,6 +129,7 @@ def test_large_result_set() -> None:
         id=uuid4(),
         corpus_version="1.0",
         agent_draft_version="v1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 

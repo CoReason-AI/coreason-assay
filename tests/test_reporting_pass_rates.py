@@ -32,6 +32,7 @@ def test_reporting_pass_rates_and_averages() -> None:
         id=run_id,
         corpus_version="v1",
         agent_draft_version="d1",
+        run_by="tester",
         status=TestRunStatus.DONE,
     )
 

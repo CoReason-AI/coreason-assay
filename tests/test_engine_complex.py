@@ -65,10 +65,10 @@ async def test_engine_no_graders_fail_cases(mock_simulator: MagicMock) -> None:
     """
     case = create_test_case()
     corpus = TestCorpus(project_id="p1", name="c1", version="v1", created_by="u1", cases=[case])
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = create_result(case, run_obj.id)
 
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, run_by: Any, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -78,7 +78,7 @@ async def test_engine_no_graders_fail_cases(mock_simulator: MagicMock) -> None:
     # Initialize Engine with EMPTY graders list
     engine = AssessmentEngine(simulator=mock_simulator, graders=[])
 
-    report: ReportCard = await engine.run_assay(corpus, "v1")
+    report: ReportCard = await engine.run_assay(corpus, "v1", run_by="tester")
 
     # Verification
     assert report.total_cases == 1
@@ -98,13 +98,13 @@ async def test_engine_empty_corpus(mock_simulator: MagicMock) -> None:
     Expectation: Engine handles gracefully, returns empty report.
     """
     corpus = TestCorpus(project_id="p1", name="empty", version="v1", created_by="u1", cases=[])
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
 
     # Simulator returns empty list immediately
     mock_simulator.run_suite.return_value = (run_obj, [])
 
     engine = AssessmentEngine(simulator=mock_simulator, graders=[])
-    report: ReportCard = await engine.run_assay(corpus, "v1")
+    report: ReportCard = await engine.run_assay(corpus, "v1", run_by="tester")
 
     assert report.total_cases == 0
     assert report.passed_cases == 0
@@ -128,7 +128,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
     case2 = create_test_case()
     case3 = create_test_case()
     corpus = TestCorpus(project_id="p1", name="mix", version="v1", created_by="u1", cases=[case1, case2, case3])
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
 
     r1 = create_result(case1, run_obj.id)
     r2 = create_result(case2, run_obj.id)
@@ -155,7 +155,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
     grader_b.grade.side_effect = grade_b
 
     # 3. Setup Simulator
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, run_by: Any, on_progress: Any) -> Any:
         # Simulate sequential completion
         for idx, res in enumerate(results, start=1):
             if on_progress:
@@ -166,7 +166,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
 
     # 4. Run
     engine = AssessmentEngine(simulator=mock_simulator, graders=[grader_a, grader_b])
-    report: ReportCard = await engine.run_assay(corpus, "v1")
+    report: ReportCard = await engine.run_assay(corpus, "v1", run_by="tester")
 
     # 5. Verification
     # Case 1: Pass + Pass = Pass
@@ -207,13 +207,13 @@ async def test_engine_unknown_case_id(mock_simulator: MagicMock) -> None:
     """
     case = create_test_case()
     corpus = TestCorpus(project_id="p1", name="c1", version="v1", created_by="u1", cases=[case])
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
 
     # Create a result with a RANDOM ID, not case.id
     unknown_case = TestCase(id=uuid4(), corpus_id=uuid4(), inputs=case.inputs, expectations=case.expectations)
     result_obj = create_result(unknown_case, run_obj.id)
 
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, run_by: Any, on_progress: Any) -> Any:
         if on_progress:
             # Pass the unknown result to the callback
             await on_progress(1, 1, result_obj)
@@ -224,7 +224,7 @@ async def test_engine_unknown_case_id(mock_simulator: MagicMock) -> None:
     engine = AssessmentEngine(simulator=mock_simulator, graders=[])
 
     # Run
-    await engine.run_assay(corpus, "v1")
+    await engine.run_assay(corpus, "v1", run_by="tester")
 
     # Assertions
     # Since we didn't crash, the test passes.

@@ -21,16 +21,16 @@ from coreason_assay.models import Score, TestResult, TestResultOutput, TestRun
 def run_metadata() -> Tuple[TestRun, TestRun]:
     """Generates a pair of runs with same corpus version."""
     v = "v1.0"
-    r1 = TestRun(corpus_version=v, agent_draft_version="draft-1")
-    r2 = TestRun(corpus_version=v, agent_draft_version="draft-2")
+    r1 = TestRun(corpus_version=v, agent_draft_version="draft-1", run_by="tester")
+    r2 = TestRun(corpus_version=v, agent_draft_version="draft-2", run_by="tester")
     return r1, r2
 
 
 @pytest.fixture
 def run_metadata_mismatch() -> Tuple[TestRun, TestRun]:
     """Generates a pair of runs with different corpus versions."""
-    r1 = TestRun(corpus_version="v1.0", agent_draft_version="draft-1")
-    r2 = TestRun(corpus_version="v1.1", agent_draft_version="draft-2")
+    r1 = TestRun(corpus_version="v1.0", agent_draft_version="draft-1", run_by="tester")
+    r2 = TestRun(corpus_version="v1.1", agent_draft_version="draft-2", run_by="tester")
     return r1, r2
 
 

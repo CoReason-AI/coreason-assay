@@ -16,6 +16,15 @@ from typing import Annotated, Any, Dict, List, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
+try:
+    from coreason_identity.models import UserContext
+except ImportError:
+    # Mock for development/CI where the private package isn't available
+    class UserContext(BaseModel):  # type: ignore
+        user_id: str = Field(..., description="User ID")
+        groups: List[str] = Field(default_factory=list, description="Groups")
+
+
 from coreason_assay.grader import (
     BaseGrader,
     FaithfulnessGrader,
@@ -51,6 +60,7 @@ def set_dependencies(runner: AgentRunner, llm_client: LLMClient) -> None:
 class RunRequest(BaseModel):
     corpus: TestCorpus
     agent_version: str
+    run_by: str = Field(..., description="User running the assay")
     graders: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
 
@@ -87,13 +97,15 @@ def upload_corpus(
         file.file.close()
 
     try:
+        # In a real scenario, author/UserContext would be derived from the auth token
+        user_context = UserContext(user_id=author)
         corpus = upload_bec(
             file_path=zip_path,
             extraction_dir=extraction_dir,
             project_id=project_id,
             name=name,
             version=version,
-            created_by=author,
+            user_context=user_context,
         )
         return corpus
     except Exception as e:
@@ -138,11 +150,13 @@ async def run_assay(request: RunRequest) -> ReportCard:
             raise HTTPException(status_code=400, detail=f"Invalid configuration for grader {name}: {e}") from e
 
     try:
+        user_context = UserContext(user_id=request.run_by)
         report = await run_suite(
             corpus=request.corpus,
             agent_runner=_agent_runner,
             agent_draft_version=request.agent_version,
             graders=graders_list,
+            user_context=user_context,
         )
         return report
     except Exception as e:

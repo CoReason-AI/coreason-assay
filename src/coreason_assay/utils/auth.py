@@ -9,8 +9,9 @@
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
 import os
-from pydantic import BaseModel, Field
 from typing import List
+
+from pydantic import BaseModel, Field
 
 try:
     from coreason_identity.models import UserContext
@@ -19,6 +20,7 @@ except ImportError:
     class UserContext(BaseModel):  # type: ignore
         user_id: str = Field(..., description="User ID")
         groups: List[str] = Field(default_factory=list, description="Groups")
+
 
 def get_cli_context() -> UserContext:
     """
@@ -33,7 +35,4 @@ def get_cli_context() -> UserContext:
 
     # 2. In the future, decode a JWT or reading ~/.coreason/credentials
 
-    return UserContext(
-        user_id=user_id,
-        groups=["cli_users"]
-    )
+    return UserContext(user_id=user_id, groups=["cli_users"])
