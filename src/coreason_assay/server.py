@@ -11,9 +11,9 @@
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
 from coreason_assay.engine import AssessmentEngine
@@ -34,14 +34,15 @@ from coreason_assay.simulator import Simulator
 app = FastAPI(
     title="Coreason Assay QC Service",
     version="0.2.0",
-    description="Quality Control (QC) Microservice for executing Cognitive Assays against AI agents."
+    description="Quality Control (QC) Microservice for executing Cognitive Assays against AI agents.",
 )
 
 # Global dependencies
 _agent_runner: Optional[AgentRunner] = None
 _llm_client: Optional[LLMClient] = None
 
-def set_dependencies(runner: AgentRunner, llm_client: Optional[LLMClient] = None) -> None:
+
+def set_dependencies(runner: Optional[AgentRunner], llm_client: Optional[LLMClient] = None) -> None:
     """
     Injects concrete implementations of AgentRunner and LLMClient.
     This must be called before the server starts accepting /run requests.
@@ -50,24 +51,27 @@ def set_dependencies(runner: AgentRunner, llm_client: Optional[LLMClient] = None
     _agent_runner = runner
     _llm_client = llm_client
 
+
 class RunRequest(BaseModel):
     """
     Request body for executing an assay.
     """
+
     corpus: TestCorpus = Field(..., description="The Test Corpus to execute.")
     agent_version: str = Field(..., description="Version of the agent draft being tested.")
     graders: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Configuration for graders (e.g., {'Latency': {'threshold_ms': 5000}, 'Faithfulness': {}})"
+        description="Configuration for graders (e.g., {'Latency': {'threshold_ms': 5000}, 'Faithfulness': {}})",
     )
+
 
 @app.post("/upload", response_model=TestCorpus)
 def upload_corpus(
-    file: UploadFile = File(...),
-    project_id: str = Form(...),
-    name: str = Form(...),
-    version: str = Form(...),
-    author: str = Form(...),
+    file: Annotated[UploadFile, File(...)],
+    project_id: Annotated[str, Form(...)],
+    name: Annotated[str, Form(...)],
+    version: Annotated[str, Form(...)],
+    author: Annotated[str, Form(...)],
 ) -> TestCorpus:
     """
     Uploads a ZIP file containing a Benchmark Evaluation Corpus (BEC) and returns the parsed TestCorpus.
@@ -90,20 +94,21 @@ def upload_corpus(
             project_id=project_id,
             name=name,
             version=version,
-            created_by=author
+            created_by=author,
         )
 
         # Cleanup the zip file to save space, keeping only extracted files
         try:
             zip_path.unlink()
         except OSError:
-            pass # Best effort
+            pass  # Best effort
 
         return corpus
     except Exception as e:
         # Cleanup the created directory on failure to prevent resource leaks
         shutil.rmtree(upload_dir, ignore_errors=True)
-        raise HTTPException(status_code=400, detail=f"Failed to process upload: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to process upload: {str(e)}") from e
+
 
 @app.post("/run", response_model=ReportCard)
 async def run_assay(request: RunRequest) -> ReportCard:
@@ -111,7 +116,10 @@ async def run_assay(request: RunRequest) -> ReportCard:
     Executes the assay for the provided corpus and agent version.
     """
     if _agent_runner is None:
-        raise HTTPException(status_code=503, detail="AgentRunner not initialized. Server must be configured with a concrete AgentRunner.")
+        raise HTTPException(
+            status_code=503,
+            detail="AgentRunner not initialized. Server must be configured with a concrete AgentRunner.",
+        )
 
     # Build graders list
     graders_list: List[BaseGrader] = []
@@ -134,7 +142,9 @@ async def run_assay(request: RunRequest) -> ReportCard:
 
         elif name == "Faithfulness":
             if not _llm_client:
-                raise HTTPException(status_code=503, detail="LLMClient not initialized, required for FaithfulnessGrader.")
+                raise HTTPException(
+                    status_code=503, detail="LLMClient not initialized, required for FaithfulnessGrader."
+                )
             graders_list.append(FaithfulnessGrader(llm_client=_llm_client))
 
         elif name == "Tone":
@@ -159,6 +169,7 @@ async def run_assay(request: RunRequest) -> ReportCard:
     )
 
     return report_card
+
 
 @app.get("/health")
 def health_check() -> Dict[str, str]:
