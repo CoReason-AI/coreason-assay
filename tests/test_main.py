@@ -32,7 +32,14 @@ def test_upload_success() -> None:
     mock_corpus.id = "123-uuid"
     mock_corpus.cases = [1, 2, 3]
 
-    with patch("coreason_assay.main.upload_bec", return_value=mock_corpus) as mock_upload:
+    with patch("coreason_assay.main.upload_bec", return_value=mock_corpus) as mock_upload, patch(
+        "coreason_assay.main.get_cli_context"
+    ) as mock_get_context:
+
+        mock_context = MagicMock()
+        mock_context.user_id = "tester"
+        mock_get_context.return_value = mock_context
+
         result = runner.invoke(
             app,
             [
@@ -44,8 +51,6 @@ def test_upload_success() -> None:
                 "Corpus 1",
                 "--version",
                 "1.0",
-                "--author",
-                "tester",
                 "--output",
                 "out_dir",
             ],
@@ -60,13 +65,15 @@ def test_upload_success() -> None:
             project_id="proj-1",
             name="Corpus 1",
             version="1.0",
-            created_by="tester",
+            user_context=mock_context,
         )
 
 
 def test_upload_failure() -> None:
     """Test the upload command when an error occurs."""
-    with patch("coreason_assay.main.upload_bec", side_effect=Exception("Upload failed")):
+    with patch("coreason_assay.main.upload_bec", side_effect=Exception("Upload failed")), patch(
+        "coreason_assay.main.get_cli_context"
+    ):
         result = runner.invoke(app, ["upload", "dummy.zip"])
 
         assert result.exit_code == 1

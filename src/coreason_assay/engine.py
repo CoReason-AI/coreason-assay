@@ -69,6 +69,7 @@ class AssessmentEngine:
         self,
         corpus: TestCorpus,
         agent_draft_version: str,
+        run_by: str,
         on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
     ) -> ReportCard:
         """
@@ -77,6 +78,7 @@ class AssessmentEngine:
         Args:
             corpus: The test corpus to run.
             agent_draft_version: The version string of the agent.
+            run_by: The user ID of the person running the test.
             on_progress: Optional async callback for real-time updates.
                          Receives (completed_count, total_count, graded_result).
 
@@ -106,6 +108,7 @@ class AssessmentEngine:
         run, results = await self.simulator.run_suite(
             corpus=corpus,
             agent_draft_version=agent_draft_version,
+            run_by=run_by,
             on_progress=_progress_interceptor,
         )
 

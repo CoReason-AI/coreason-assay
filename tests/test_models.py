@@ -52,10 +52,11 @@ class TestModels:
         assert corpus.cases == []
 
     def test_test_run_creation(self) -> None:
-        run = TestRun(corpus_version="1.0", agent_draft_version="v2-draft")
+        run = TestRun(corpus_version="1.0", agent_draft_version="v2-draft", run_by="tester")
 
         assert run.corpus_version == "1.0"
         assert run.agent_draft_version == "v2-draft"
+        assert run.run_by == "tester"
         assert run.status == TestRunStatus.RUNNING
 
     def test_test_result_creation(self) -> None:

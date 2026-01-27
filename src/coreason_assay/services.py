@@ -11,6 +11,16 @@
 from pathlib import Path
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
+from pydantic import BaseModel, Field
+
+try:
+    from coreason_identity.models import UserContext
+except ImportError:
+    # Mock for development/CI where the private package isn't available
+    class UserContext(BaseModel):  # type: ignore
+        user_id: str = Field(..., description="User ID")
+        groups: List[str] = Field(default_factory=list, description="Groups")
+
 from coreason_assay.bec_manager import BECManager
 from coreason_assay.engine import AssessmentEngine
 from coreason_assay.grader import BaseGrader
@@ -26,7 +36,7 @@ def upload_bec(
     project_id: str,
     name: str,
     version: str,
-    created_by: str,
+    user_context: UserContext,
 ) -> TestCorpus:
     """
     Ingests a Benchmark Evaluation Corpus (BEC) from a ZIP file.
@@ -38,12 +48,13 @@ def upload_bec(
         project_id: ID of the project this corpus belongs to.
         name: Name of the corpus.
         version: Version string for the corpus.
-        created_by: Identifier of the user creating the corpus.
+        user_context: Context of the user creating the corpus.
 
     Returns:
         TestCorpus: The constructed test corpus with loaded test cases.
     """
-    logger.info(f"Uploading BEC from {file_path} (Project: {project_id}, Version: {version})")
+    created_by = user_context.user_id
+    logger.info(f"Uploading BEC from {file_path} (Project: {project_id}, Version: {version}, User: {created_by})")
 
     # Load test cases using BECManager
     # Note: BECManager.load_from_zip handles extraction and manifest parsing
@@ -73,6 +84,7 @@ async def run_suite(
     agent_runner: AgentRunner,
     agent_draft_version: str,
     graders: List[BaseGrader],
+    user_context: UserContext,
     on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
 ) -> ReportCard:
     """
@@ -84,12 +96,14 @@ async def run_suite(
         agent_runner: The implementation of the agent runner (adapter).
         agent_draft_version: The version string of the agent being tested.
         graders: List of graders to evaluate the results.
+        user_context: Context of the user running the test.
         on_progress: Optional async callback for progress updates.
 
     Returns:
         ReportCard: The final graded report card.
     """
-    logger.info(f"Starting test suite run for Corpus {corpus.id} (Agent v{agent_draft_version})")
+    run_by = user_context.user_id
+    logger.info(f"Starting test suite run for Corpus {corpus.id} (Agent v{agent_draft_version}, User: {run_by})")
 
     # 1. Initialize Simulator with the provided AgentRunner
     simulator = Simulator(runner=agent_runner)
@@ -101,6 +115,7 @@ async def run_suite(
     report_card = await engine.run_assay(
         corpus=corpus,
         agent_draft_version=agent_draft_version,
+        run_by=run_by,
         on_progress=on_progress,
     )
 

@@ -14,6 +14,7 @@ import typer
 from typing_extensions import Annotated
 
 from coreason_assay.services import upload_bec
+from coreason_assay.utils.auth import get_cli_context
 from coreason_assay.utils.logger import logger
 
 app = typer.Typer(
@@ -37,12 +38,12 @@ def upload(
     project_id: Annotated[str, typer.Option("--project-id", "-p", help="Project ID")] = "default-project",
     name: Annotated[str, typer.Option("--name", "-n", help="Name of the corpus")] = "New Corpus",
     version: Annotated[str, typer.Option("--version", "-v", help="Version of the corpus")] = "1.0.0",
-    created_by: Annotated[str, typer.Option("--author", "-a", help="Creator identifier")] = "cli_user",
     output_dir: Annotated[Path, typer.Option("--output", "-o", help="Extraction directory")] = Path("./data/extracted"),
 ) -> None:
     """
     Upload and digest a Benchmark Evaluation Corpus (BEC) from a ZIP file.
     """
+    user_context = get_cli_context()
     try:
         corpus = upload_bec(
             file_path=file_path,
@@ -50,7 +51,7 @@ def upload(
             project_id=project_id,
             name=name,
             version=version,
-            created_by=created_by,
+            user_context=user_context,
         )
         typer.echo(f"Successfully uploaded Corpus: {corpus.name} (ID: {corpus.id}) with {len(corpus.cases)} cases.")
     except Exception as e:

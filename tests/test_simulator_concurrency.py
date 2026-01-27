@@ -109,7 +109,7 @@ async def test_run_suite_concurrency(basic_corpus: TestCorpus) -> None:
     simulator = Simulator(runner)
 
     start_t = time.perf_counter()
-    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
+    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1", run_by="tester")
     end_t = time.perf_counter()
 
     duration = end_t - start_t
@@ -140,7 +140,9 @@ async def test_run_suite_progress_callback(basic_corpus: TestCorpus) -> None:
     async def on_progress(completed: int, total: int, last_result: Any) -> None:
         callback_calls.append((completed, total, last_result.case_id))
 
-    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1", on_progress=on_progress)
+    test_run, results = await simulator.run_suite(
+        basic_corpus, agent_draft_version="0.0.1", run_by="tester", on_progress=on_progress
+    )
 
     assert len(callback_calls) == 3
     # Check that 'completed' counts increment
@@ -162,7 +164,7 @@ async def test_run_suite_failsafe_execution(basic_corpus: TestCorpus) -> None:
     runner = FlakyAgentRunner(failure_trigger_prompt="FAIL_ME")
     simulator = Simulator(runner)
 
-    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
+    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1", run_by="tester")
 
     assert len(results) == 3
     assert test_run.status == TestRunStatus.DONE  # The run itself finishes
@@ -187,7 +189,7 @@ async def test_run_suite_empty_corpus() -> None:
     runner = AsyncSleepAgentRunner(0)
     simulator = Simulator(runner)
 
-    test_run, results = await simulator.run_suite(empty_corpus, agent_draft_version="v1")
+    test_run, results = await simulator.run_suite(empty_corpus, agent_draft_version="v1", run_by="tester")
 
     assert len(results) == 0
     assert test_run.status == TestRunStatus.DONE
@@ -205,7 +207,7 @@ async def test_run_suite_on_progress_error(basic_corpus: TestCorpus) -> None:
         raise RuntimeError("Callback Failed")
 
     test_run, results = await simulator.run_suite(
-        basic_corpus, agent_draft_version="0.0.1", on_progress=on_progress_raising
+        basic_corpus, agent_draft_version="0.0.1", run_by="tester", on_progress=on_progress_raising
     )
 
     # Should complete all cases despite callback errors
@@ -230,7 +232,7 @@ async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker:
 
     mocker.patch.object(simulator, "run_case", side_effect=broken_method)
 
-    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1")
+    test_run, results = await simulator.run_suite(basic_corpus, agent_draft_version="0.0.1", run_by="tester")
 
     # The fail-safe catches the error and continues.
     # We now expect robust failure results to be generated.

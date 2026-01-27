@@ -89,6 +89,7 @@ class TestRun(BaseModel):
     id: UUID = Field(default_factory=uuid4, description="Unique identifier for the test run.")
     corpus_version: str = Field(..., description="Version of the corpus used.")
     agent_draft_version: str = Field(..., description="Version of the agent draft being tested.")
+    run_by: str = Field(..., description="The user ID of the person running the test.")
     status: TestRunStatus = Field(default=TestRunStatus.RUNNING, description="Current status of the run.")
 
 

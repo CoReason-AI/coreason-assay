@@ -89,6 +89,7 @@ class Simulator:
         self,
         corpus: TestCorpus,
         agent_draft_version: str,
+        run_by: str,
         on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
     ) -> Tuple[TestRun, List[TestResult]]:
         """
@@ -97,6 +98,7 @@ class Simulator:
         Args:
             corpus: The TestCorpus to execute.
             agent_draft_version: Identifier for the agent version being tested.
+            run_by: The user ID of the person running the test.
             on_progress: Optional async callback (completed_count, total_count, last_result).
 
         Returns:
@@ -105,6 +107,7 @@ class Simulator:
         test_run = TestRun(
             corpus_version=corpus.version,
             agent_draft_version=agent_draft_version,
+            run_by=run_by,
             status=TestRunStatus.RUNNING,
         )
 

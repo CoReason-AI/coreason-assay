@@ -75,7 +75,7 @@ async def test_run_assay_basic_flow(
 ) -> None:
     # Setup Data
     case = simple_corpus.cases[0]
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -86,7 +86,7 @@ async def test_run_assay_basic_flow(
     )
 
     # Configure run_suite to call the callback and return results
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, run_by: str, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -97,7 +97,7 @@ async def test_run_assay_basic_flow(
     engine = AssessmentEngine(simulator=mock_simulator, graders=[mock_grader])
 
     # Run
-    report: ReportCard = await engine.run_assay(simple_corpus, "v1")
+    report: ReportCard = await engine.run_assay(simple_corpus, "v1", run_by="tester")
 
     # Verify Report
     assert report.total_cases == 1
@@ -122,7 +122,7 @@ async def test_run_assay_basic_flow(
 async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMock, simple_corpus: TestCorpus) -> None:
     # Setup Data
     case = simple_corpus.cases[0]
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -139,7 +139,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
         reasoning="Failed",
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, run_by: str, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -147,7 +147,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
     mock_simulator.run_suite.side_effect = side_effect
 
     engine = AssessmentEngine(simulator=mock_simulator, graders=[mock_grader])
-    report: ReportCard = await engine.run_assay(simple_corpus, "v1")
+    report: ReportCard = await engine.run_assay(simple_corpus, "v1", run_by="tester")
 
     assert report.passed_cases == 0
     assert report.failed_cases == 1
@@ -161,7 +161,7 @@ async def test_on_progress_passthrough(
 ) -> None:
     # Setup
     case = simple_corpus.cases[0]
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -170,7 +170,7 @@ async def test_on_progress_passthrough(
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, run_by: str, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -180,7 +180,7 @@ async def test_on_progress_passthrough(
     engine = AssessmentEngine(simulator=mock_simulator, graders=[mock_grader])
     user_callback = AsyncMock()
 
-    await engine.run_assay(simple_corpus, "v1", on_progress=user_callback)
+    await engine.run_assay(simple_corpus, "v1", run_by="tester", on_progress=user_callback)
 
     user_callback.assert_called_once()
     args = user_callback.call_args[0]
@@ -200,7 +200,7 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
     g2.grade.return_value = Score(name="G2", value=0.0, passed=False, reasoning="Fail")
 
     case = simple_corpus.cases[0]
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -209,7 +209,7 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, run_by: str, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -217,7 +217,7 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
     mock_simulator.run_suite.side_effect = side_effect
 
     engine = AssessmentEngine(simulator=mock_simulator, graders=[g1, g2])
-    report: ReportCard = await engine.run_assay(simple_corpus, "v1")
+    report: ReportCard = await engine.run_assay(simple_corpus, "v1", run_by="tester")
 
     assert len(result_obj.scores) == 2
     # Result should be failed because G2 failed
@@ -232,7 +232,7 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
     g1.grade.side_effect = Exception("Boom")
 
     case = simple_corpus.cases[0]
-    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
+    run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", run_by="tester", status=TestRunStatus.DONE)
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
@@ -241,7 +241,7 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, run_by: str, on_progress: Any) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -249,7 +249,7 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
     mock_simulator.run_suite.side_effect = side_effect
 
     engine = AssessmentEngine(simulator=mock_simulator, graders=[g1])
-    report: ReportCard = await engine.run_assay(simple_corpus, "v1")
+    report: ReportCard = await engine.run_assay(simple_corpus, "v1", run_by="tester")
 
     # Should not crash, but result has no scores and fails
     assert len(result_obj.scores) == 0

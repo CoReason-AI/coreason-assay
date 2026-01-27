@@ -77,6 +77,9 @@ def test_upload_bec(mock_bec_manager: MagicMock, tmp_path: Any) -> None:
     zip_path.touch()
     extract_dir = tmp_path / "extract"
 
+    mock_context = MagicMock()
+    mock_context.user_id = "user-1"
+
     # Execute
     corpus = upload_bec(
         file_path=zip_path,
@@ -84,7 +87,7 @@ def test_upload_bec(mock_bec_manager: MagicMock, tmp_path: Any) -> None:
         project_id="proj-123",
         name="Test Corpus",
         version="v1.0",
-        created_by="user-1",
+        user_context=mock_context,
     )
 
     # Verify
@@ -115,9 +118,16 @@ async def test_run_suite(mock_simulator: MagicMock, mock_engine: MagicMock) -> N
     # Configure mock simulator instance (though not strictly accessed in run_suite logic before passed to engine)
     mock_sim_instance = mock_simulator.return_value
 
+    mock_context = MagicMock()
+    mock_context.user_id = "user-1"
+
     # Execute
     report = await run_suite(
-        corpus=corpus, agent_runner=mock_runner, agent_draft_version="draft-v1", graders=mock_graders
+        corpus=corpus,
+        agent_runner=mock_runner,
+        agent_draft_version="draft-v1",
+        graders=mock_graders,
+        user_context=mock_context,
     )
 
     # Verify initialization
@@ -126,7 +136,7 @@ async def test_run_suite(mock_simulator: MagicMock, mock_engine: MagicMock) -> N
 
     # Verify execution
     mock_engine_instance.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="draft-v1", on_progress=None
+        corpus=corpus, agent_draft_version="draft-v1", run_by="user-1", on_progress=None
     )
 
     assert report == expected_report
@@ -147,12 +157,20 @@ async def test_run_suite_with_progress(mock_simulator: MagicMock, mock_engine: M
         return_value=ReportCard(run_id=uuid4(), total_cases=0, passed_cases=0, failed_cases=0, pass_rate=0.0)
     )
 
+    mock_context = MagicMock()
+    mock_context.user_id = "user-1"
+
     # Execute
     await run_suite(
-        corpus=corpus, agent_runner=mock_runner, agent_draft_version="v1", graders=mock_graders, on_progress=progress_cb
+        corpus=corpus,
+        agent_runner=mock_runner,
+        agent_draft_version="v1",
+        graders=mock_graders,
+        user_context=mock_context,
+        on_progress=progress_cb,
     )
 
     # Verify
     mock_engine_instance.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="v1", on_progress=progress_cb
+        corpus=corpus, agent_draft_version="v1", run_by="user-1", on_progress=progress_cb
     )
