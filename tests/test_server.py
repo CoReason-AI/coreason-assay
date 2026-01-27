@@ -1,6 +1,6 @@
 # Copyright (c) 2025 CoReason, Inc.
 
-from typing import Any, Generator, Tuple
+from typing import Any, Generator, Tuple, cast
 from unittest.mock import MagicMock
 from uuid import uuid4
 
@@ -24,7 +24,7 @@ def test_health() -> None:
 
 @pytest.fixture
 def mock_upload_bec(mocker: Any) -> MagicMock:
-    return mocker.patch("coreason_assay.server.upload_bec")
+    return cast(MagicMock, mocker.patch("coreason_assay.server.upload_bec"))
 
 
 def test_upload_corpus(mock_upload_bec: MagicMock, mocker: Any) -> None:
