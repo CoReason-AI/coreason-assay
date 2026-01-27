@@ -13,6 +13,9 @@ pydantic = "^2.12.5"
 jsonschema = "^4.26.0"
 typer = "^0.21.1"
 pydantic-settings = "^2.12.0"
+fastapi = "^0.128.0"
+uvicorn = "^0.40.0"
+python-multipart = "^0.0.22"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
@@ -27,6 +30,7 @@ types-requests = "^2.32.4.20260107"
 types-setuptools = "^80.9.0.20251223"
 pytest-asyncio = "^1.3.0"
 mypy = "^1.19.1"
+httpx = "^0.28.1"
 
 [build-system]
 requires = ["poetry-core"]
