@@ -1,7 +1,7 @@
 # Copyright (c) 2025 CoReason, Inc.
 
 from pathlib import Path
-from typing import cast, Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
