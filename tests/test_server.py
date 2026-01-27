@@ -73,6 +73,19 @@ def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
     assert file_path.exists()
 
 
+def test_upload_corpus_error(mock_upload_bec: MagicMock) -> None:
+    # Mock exception
+    mock_upload_bec.side_effect = ValueError("Corrupted ZIP")
+
+    files = {"file": ("corpus.zip", b"bad content", "application/zip")}
+    data = {"project_id": "p1", "name": "test", "version": "v1", "author": "me"}
+
+    response = client.post("/upload", files=files, data=data)
+
+    assert response.status_code == 400
+    assert "Corrupted ZIP" in response.json()["detail"]
+
+
 def test_run_assay_no_deps(mock_run_suite: AsyncMock) -> None:
     # Dependencies not set, should fail
     # We must reset deps because they are global
@@ -141,6 +154,141 @@ async def test_run_assay_success(
     grader_names = {g.__class__.__name__ for g in graders}
     assert "LatencyGrader" in grader_names
     assert "FaithfulnessGrader" in grader_names
+
+
+def test_run_assay_error(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
+    set_dependencies(mock_agent_runner, MagicMock(spec=LLMClient))
+    mock_run_suite.side_effect = RuntimeError("Engine Failure")
+
+    corpus_data = {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "p1",
+        "name": "test",
+        "version": "v1",
+        "created_by": "me",
+        "cases": [],
+    }
+
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {}}
+
+    response = client.post("/run", json=payload)
+    assert response.status_code == 500
+    assert "Engine Failure" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_run_assay_all_graders(
+    mock_run_suite: AsyncMock, mock_agent_runner: MagicMock, mock_llm_client: MagicMock
+) -> None:
+    set_dependencies(mock_agent_runner, mock_llm_client)
+    mock_run_suite.return_value = ReportCard(
+        run_id=uuid4(),
+        total_cases=1,
+        passed_cases=1,
+        failed_cases=0,
+        pass_rate=1.0,
+        aggregates=[],
+    )
+
+    corpus_data = {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "p1",
+        "name": "test",
+        "version": "v1",
+        "created_by": "me",
+        "cases": [],
+    }
+
+    payload = {
+        "corpus": corpus_data,
+        "agent_version": "1.0.0",
+        "graders": {
+            "JsonSchema": {},
+            "ForbiddenContent": {},
+            "Reasoning": {},
+            "Tone": {},
+        },
+    }
+
+    response = client.post("/run", json=payload)
+    assert response.status_code == 200
+
+    kwargs = mock_run_suite.call_args.kwargs
+    graders = kwargs["graders"]
+    grader_names = {g.__class__.__name__ for g in graders}
+    assert "JsonSchemaGrader" in grader_names
+    assert "ForbiddenContentGrader" in grader_names
+    assert "ReasoningGrader" in grader_names
+    assert "ToneGrader" in grader_names
+
+
+def test_run_assay_unknown_grader(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
+    set_dependencies(mock_agent_runner, MagicMock(spec=LLMClient))
+    mock_run_suite.return_value = ReportCard(
+        run_id=uuid4(), total_cases=0, passed_cases=0, failed_cases=0, pass_rate=0, aggregates=[]
+    )
+
+    corpus_data = {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "p1",
+        "name": "test",
+        "version": "v1",
+        "created_by": "me",
+        "cases": [],
+    }
+
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"UnknownThing": {}}}
+
+    response = client.post("/run", json=payload)
+    assert response.status_code == 200
+    # Should warn but succeed
+    kwargs = mock_run_suite.call_args.kwargs
+    assert len(kwargs["graders"]) == 0
+
+
+def test_run_assay_invalid_grader_config(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
+    set_dependencies(mock_agent_runner, MagicMock(spec=LLMClient))
+
+    corpus_data = {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "p1",
+        "name": "test",
+        "version": "v1",
+        "created_by": "me",
+        "cases": [],
+    }
+
+    # LatencyGrader takes threshold_ms (float), passing unexpected arg
+    payload = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Latency": {"invalid_arg": 1}}}
+
+    response = client.post("/run", json=payload)
+    assert response.status_code == 400
+    assert "Invalid configuration" in response.json()["detail"]
+
+
+def test_run_assay_missing_llm_client_variants(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
+    set_dependencies(mock_agent_runner, None)  # type: ignore
+
+    corpus_data = {
+        "id": "123e4567-e89b-12d3-a456-426614174000",
+        "project_id": "p1",
+        "name": "test",
+        "version": "v1",
+        "created_by": "me",
+        "cases": [],
+    }
+
+    # Test Reasoning
+    payload_reasoning = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Reasoning": {}}}
+    resp = client.post("/run", json=payload_reasoning)
+    assert resp.status_code == 503
+    assert "LLMClient" in resp.json()["detail"]
+
+    # Test Tone
+    payload_tone = {"corpus": corpus_data, "agent_version": "1.0.0", "graders": {"Tone": {}}}
+    resp = client.post("/run", json=payload_tone)
+    assert resp.status_code == 503
+    assert "LLMClient" in resp.json()["detail"]
 
 
 def test_run_assay_missing_llm_client(mock_run_suite: AsyncMock, mock_agent_runner: MagicMock) -> None:
