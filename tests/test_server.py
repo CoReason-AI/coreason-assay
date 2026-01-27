@@ -1,16 +1,18 @@
 # Copyright (c) 2025 CoReason, Inc.
 
-import pytest
-from fastapi.testclient import TestClient
+from typing import Any, Generator, Tuple
 from unittest.mock import MagicMock
 from uuid import uuid4
-from typing import Generator, Tuple, Any
 
-from coreason_assay.server import app, set_dependencies
-from coreason_assay.models import TestCorpus, ReportCard
+import pytest
+from fastapi.testclient import TestClient
+
 from coreason_assay.interfaces import AgentRunner, LLMClient
+from coreason_assay.models import ReportCard, TestCorpus
+from coreason_assay.server import app, set_dependencies
 
 client = TestClient(app)
+
 
 def test_health() -> None:
     response = client.get("/health")
@@ -19,9 +21,11 @@ def test_health() -> None:
     assert data["status"] == "healthy"
     assert "version" in data
 
+
 @pytest.fixture
-def mock_upload_bec(mocker: Any) -> Generator[MagicMock, None, None]:
+def mock_upload_bec(mocker: Any) -> MagicMock:
     return mocker.patch("coreason_assay.server.upload_bec")
+
 
 def test_upload_corpus(mock_upload_bec: MagicMock, mocker: Any) -> None:
     # Setup mock return
@@ -45,6 +49,7 @@ def test_upload_corpus(mock_upload_bec: MagicMock, mocker: Any) -> None:
     # Verify zip unlink called
     mock_unlink.assert_called()
 
+
 def test_upload_corpus_unlink_failure(mock_upload_bec: MagicMock, mocker: Any) -> None:
     mock_unlink = mocker.patch("pathlib.Path.unlink", side_effect=OSError("Cannot delete"))
 
@@ -62,6 +67,7 @@ def test_upload_corpus_unlink_failure(mock_upload_bec: MagicMock, mocker: Any) -
     mock_unlink.assert_called()
     # Should swallow error and return success
 
+
 def test_upload_corpus_failure(mock_upload_bec: MagicMock, mocker: Any) -> None:
     mock_upload_bec.side_effect = Exception("Upload failed")
 
@@ -78,13 +84,15 @@ def test_upload_corpus_failure(mock_upload_bec: MagicMock, mocker: Any) -> None:
     assert "Failed to process upload" in response.json()["detail"]
     mock_rmtree.assert_called_once()
 
+
 @pytest.fixture
 def mock_dependencies() -> Generator[Tuple[MagicMock, MagicMock], None, None]:
     runner = MagicMock(spec=AgentRunner)
     llm = MagicMock(spec=LLMClient)
     set_dependencies(runner, llm)
     yield runner, llm
-    set_dependencies(None, None) # reset
+    set_dependencies(None, None)  # reset
+
 
 def test_run_assay_missing_dependencies() -> None:
     # Ensure no dependencies set
@@ -100,9 +108,10 @@ def test_run_assay_missing_dependencies() -> None:
     assert response.status_code == 503
     assert "AgentRunner not initialized" in response.json()["detail"]
 
+
 def test_run_assay_missing_llm_client(mock_dependencies: Tuple[MagicMock, MagicMock]) -> None:
     runner, _ = mock_dependencies
-    set_dependencies(runner, None) # No LLM client
+    set_dependencies(runner, None)  # No LLM client
 
     corpus = TestCorpus(project_id="p1", name="Test Corpus", version="1.0", created_by="tester", cases=[])
 
@@ -152,8 +161,8 @@ def test_run_assay_all_graders(mock_dependencies: Tuple[MagicMock, MagicMock], m
                 "ForbiddenContent": {},
                 "Reasoning": {},
                 "Tone": {},
-                "UnknownGrader": {}
-            }
+                "UnknownGrader": {},
+            },
         },
     )
 

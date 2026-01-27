@@ -65,7 +65,7 @@ class RunRequest(BaseModel):
     )
 
 
-@app.post("/upload", response_model=TestCorpus)
+@app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
 def upload_corpus(
     file: Annotated[UploadFile, File(...)],
     project_id: Annotated[str, Form(...)],
@@ -110,7 +110,7 @@ def upload_corpus(
         raise HTTPException(status_code=400, detail=f"Failed to process upload: {str(e)}") from e
 
 
-@app.post("/run", response_model=ReportCard)
+@app.post("/run", response_model=ReportCard)  # type: ignore[misc]
 async def run_assay(request: RunRequest) -> ReportCard:
     """
     Executes the assay for the provided corpus and agent version.
@@ -171,6 +171,6 @@ async def run_assay(request: RunRequest) -> ReportCard:
     return report_card
 
 
-@app.get("/health")
+@app.get("/health")  # type: ignore[misc]
 def health_check() -> Dict[str, str]:
     return {"status": "healthy", "service": "coreason-assay", "version": "0.2.0"}
