@@ -44,7 +44,7 @@ def mock_llm_client() -> MagicMock:
 def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "service": "coreason-assay", "version": "0.2.0"}
+    assert response.json() == {"status": "healthy", "service": "coreason-assay", "version": "0.3.0"}
 
 
 def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
