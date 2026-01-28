@@ -31,7 +31,7 @@ from coreason_assay.models import ReportCard, TestCorpus
 from coreason_assay.services import run_suite, upload_bec
 from coreason_assay.utils.logger import logger
 
-app = FastAPI(title="CoReason Assay Service", version="0.3.0")
+app = FastAPI(title="CoReason Assay Service", version="0.4.0")
 
 # Global dependencies
 _agent_runner: Optional[AgentRunner] = None
@@ -57,7 +57,7 @@ class RunRequest(BaseModel):
 
 @app.get("/health")  # type: ignore[misc]
 def health() -> Dict[str, str]:
-    return {"status": "healthy", "service": "coreason-assay", "version": "0.3.0"}
+    return {"status": "healthy", "service": "coreason-assay", "version": "0.4.0"}
 
 
 @app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
