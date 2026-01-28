@@ -1,16 +1,21 @@
 # Copyright (c) 2025 CoReason, Inc.
 
-import pytest
+from typing import Any, Dict
 from uuid import uuid4
-from typing import Dict, Any
-from coreason_assay.simulator import Simulator
-from coreason_assay.models import TestCase, TestCaseInput, TestCaseExpectation, TestResultOutput
+
+import pytest
 from coreason_assay.interfaces import AgentRunner
+from coreason_assay.models import TestCase, TestCaseExpectation, TestCaseInput, TestResultOutput
+from coreason_assay.simulator import Simulator
 from coreason_identity.models import UserContext
 
+
 class MockRunner(AgentRunner):
-    async def invoke(self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]) -> TestResultOutput:
-        return TestResultOutput(text="OK")
+    async def invoke(
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
+    ) -> TestResultOutput:
+        return TestResultOutput(text="OK", trace=None, structured_output=None)
+
 
 @pytest.mark.asyncio
 async def test_identity_hydration_failure() -> None:
@@ -22,7 +27,9 @@ async def test_identity_hydration_failure() -> None:
     case = TestCase(
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="p", context={}),
-        expectations=TestCaseExpectation(text="e")
+        expectations=TestCaseExpectation(
+            text="e", schema_id=None, structure=None, reasoning=[], forbidden_content=[], tool_mocks={}, tone=None
+        ),
     )
 
     result = await simulator.run_case(case, uuid4())

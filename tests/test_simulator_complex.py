@@ -13,9 +13,6 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import pytest
-
-from coreason_identity.models import UserContext
-
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -24,6 +21,7 @@ from coreason_assay.models import (
     TestResultOutput,
 )
 from coreason_assay.simulator import Simulator
+from coreason_identity.models import UserContext
 
 
 class MockAgentRunner(AgentRunner):
@@ -77,6 +75,7 @@ def test_simulator_empty_inputs(base_test_case: TestCase) -> None:
     assert result.passed is False  # default
     assert runner.last_inputs is not None
     assert runner.last_inputs.prompt == ""
+    assert runner.last_context is not None
     assert runner.last_context.user_id == "test"
     assert runner.last_context.email == "test@coreason.ai"
     assert runner.last_tool_mocks == {}

@@ -13,9 +13,6 @@ from typing import Any, Dict, List
 from uuid import uuid4
 
 import pytest
-
-from coreason_identity.models import UserContext
-
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -26,6 +23,7 @@ from coreason_assay.models import (
     TestRunStatus,
 )
 from coreason_assay.simulator import Simulator
+from coreason_identity.models import UserContext
 
 
 class SpyAgentRunner(AgentRunner):
@@ -150,7 +148,10 @@ async def test_run_suite_context_isolation() -> None:
         cases.append(
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt=f"Case_{i}", context={"user_id": f"user_{i}", "email": f"user_{i}@coreason.ai"}),
+                inputs=TestCaseInput(
+                    prompt=f"Case_{i}",
+                    context={"user_id": f"user_{i}", "email": f"user_{i}@coreason.ai"},
+                ),
                 expectations=TestCaseExpectation(
                     tone=None, text="Expected", schema_id=None, structure=None, tool_mocks={"mock_id": i}
                 ),

@@ -13,10 +13,9 @@ import tempfile
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional
 
+from coreason_identity.models import UserContext
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
-
-from coreason_identity.models import UserContext
 
 from coreason_assay.grader import (
     BaseGrader,
@@ -56,12 +55,12 @@ class RunRequest(BaseModel):
     graders: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
 
 
-@app.get("/health")  # type: ignore[misc]
+@app.get("/health")
 def health() -> Dict[str, str]:
     return {"status": "healthy", "service": "coreason-assay", "version": "0.3.0"}
 
 
-@app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
+@app.post("/upload", response_model=TestCorpus)
 def upload_corpus(
     file: Annotated[UploadFile, File(...)],
     project_id: Annotated[str, Form(...)],
@@ -107,7 +106,7 @@ def upload_corpus(
         raise HTTPException(status_code=400, detail=str(e)) from e
 
 
-@app.post("/run", response_model=ReportCard)  # type: ignore[misc]
+@app.post("/run", response_model=ReportCard)
 async def run_assay(request: RunRequest) -> ReportCard:
     """
     Executes the assay for the provided corpus and agent version.

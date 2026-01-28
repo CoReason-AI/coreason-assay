@@ -12,7 +12,6 @@ from typing import Tuple
 from uuid import UUID, uuid4
 
 import pytest
-
 from coreason_assay.drift import generate_drift_report
 from coreason_assay.models import Score, TestResult, TestResultOutput, TestRun
 

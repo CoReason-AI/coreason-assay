@@ -13,7 +13,6 @@ from typing import Dict, Optional
 from uuid import uuid4
 
 import pytest
-
 from coreason_assay.grader import ReasoningGrader
 from coreason_assay.interfaces import LLMClient
 from coreason_assay.models import TestResult, TestResultOutput

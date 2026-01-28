@@ -11,7 +11,6 @@
 from unittest.mock import patch
 
 import pytest
-
 from coreason_assay.bec_manager import BECManager
 
 

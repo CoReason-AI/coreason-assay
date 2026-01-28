@@ -14,9 +14,6 @@ from typing import Any, Dict
 from uuid import uuid4
 
 import pytest
-
-from coreason_identity.models import UserContext
-
 from coreason_assay.grader import ReasoningGrader
 from coreason_assay.interfaces import AgentRunner, LLMClient
 from coreason_assay.models import (
@@ -30,6 +27,7 @@ from coreason_assay.models import (
 )
 from coreason_assay.simulator import Simulator
 from coreason_assay.utils.parsing import parse_json_from_llm_response
+from coreason_identity.models import UserContext
 
 # --- Tests for Parsing ---
 

@@ -11,9 +11,8 @@
 from pathlib import Path
 
 import typer
-from typing_extensions import Annotated
-
 from coreason_identity.models import UserContext
+from typing_extensions import Annotated
 
 from coreason_assay.services import upload_bec
 from coreason_assay.utils.logger import logger

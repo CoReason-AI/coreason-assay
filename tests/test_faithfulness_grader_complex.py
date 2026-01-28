@@ -13,7 +13,6 @@ from typing import Optional
 from uuid import uuid4
 
 import pytest
-
 from coreason_assay.grader import FaithfulnessGrader
 from coreason_assay.interfaces import LLMClient
 from coreason_assay.models import TestCaseInput, TestResult, TestResultOutput

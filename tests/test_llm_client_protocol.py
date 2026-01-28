@@ -11,7 +11,6 @@
 from typing import Optional
 
 import pytest
-
 from coreason_assay.interfaces import LLMClient
 
 
