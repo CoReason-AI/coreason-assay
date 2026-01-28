@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "coreason_assay"
-version = "0.3.0"
+version = "0.4.0"
 description = "Quality Control (QC) laboratory of the CoReason platform"
 authors = ["Gowtham A Rao <gowtham.rao@coreason.ai>"]
 license = "Prosperity-3.0"
@@ -16,6 +16,8 @@ pydantic-settings = "^2.12.0"
 fastapi = "*"
 uvicorn = "*"
 python-multipart = "*"
+coreason-identity = "*"
+anyio = "^4.12.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.2.2"
@@ -38,7 +40,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "coreason_assay"
-version = "0.2.0"
+version = "0.4.0"
 description = "Quality Control (QC) laboratory of the CoReason platform"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -65,10 +67,14 @@ target-version = "py312"
 select = ["E", "F", "B", "I"]
 ignore = []
 
+[tool.ruff.lint.isort]
+known-first-party = ["coreason_assay"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
 ignore_missing_imports = true
+warn_unused_ignores = false
 
 [tool.pytest.ini_options]
 addopts = "--cov=src --cov-report=term-missing --cov-fail-under=100"

@@ -13,6 +13,8 @@ import time
 from typing import Any, Callable, Coroutine, List, Optional, Tuple
 from uuid import UUID
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -55,13 +57,16 @@ class Simulator:
         try:
             # Prepare context (merge case context with any global context if needed)
             # For now, we just use the case context.
-            context = case.inputs.context
+            try:
+                user_context = UserContext.model_validate(case.inputs.context)
+            except Exception as e:
+                raise ValueError(f"Identity Hydration Failed: {str(e)}") from e
 
             # Extract tool mocks
             tool_mocks = case.expectations.tool_mocks
 
             # Invoke the agent
-            output = await self.runner.invoke(case.inputs, context, tool_mocks)
+            output = await self.runner.invoke(case.inputs, user_context, tool_mocks)
 
         except Exception as e:
             logger.exception(f"Error invoking agent for case {case.id}")

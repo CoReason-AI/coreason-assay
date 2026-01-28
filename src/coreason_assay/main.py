@@ -11,6 +11,7 @@
 from pathlib import Path
 
 import typer
+from coreason_identity.models import UserContext
 from typing_extensions import Annotated
 
 from coreason_assay.services import upload_bec
@@ -44,13 +45,14 @@ def upload(
     Upload and digest a Benchmark Evaluation Corpus (BEC) from a ZIP file.
     """
     try:
+        user_context = UserContext(user_id=created_by, email=f"{created_by}@coreason.ai")
         corpus = upload_bec(
             file_path=file_path,
             extraction_dir=output_dir,
             project_id=project_id,
             name=name,
             version=version,
-            created_by=created_by,
+            user_context=user_context,
         )
         typer.echo(f"Successfully uploaded Corpus: {corpus.name} (ID: {corpus.id}) with {len(corpus.cases)} cases.")
     except Exception as e:
