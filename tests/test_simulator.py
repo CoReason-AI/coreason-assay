@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import pytest
+from coreason_identity.models import UserContext
 
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
@@ -30,22 +31,22 @@ class MockAgentRunner(AgentRunner):
         self.return_text = return_text
         self.invoked = False
         self.last_inputs: Optional[TestCaseInput] = None
-        self.last_context: Optional[Dict[str, Any]] = None
+        self.last_context: Optional[UserContext] = None
         self.last_tool_mocks: Optional[Dict[str, Any]] = None
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         self.invoked = True
         self.last_inputs = inputs
-        self.last_context = context
+        self.last_context = user_context
         self.last_tool_mocks = tool_mocks
         return TestResultOutput(text=self.return_text, trace="Mock trace", structured_output={"key": "value"})
 
 
 class RaisingAgentRunner(AgentRunner):
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         raise RuntimeError("Simulated agent failure")
 
@@ -54,7 +55,7 @@ class RaisingAgentRunner(AgentRunner):
 def sample_test_case() -> TestCase:
     return TestCase(
         corpus_id=uuid4(),
-        inputs=TestCaseInput(prompt="Hello", context={"user": "test_user"}),
+        inputs=TestCaseInput(prompt="Hello", context={"user_id": "test_user", "email": "test_user@coreason.ai"}),
         expectations=TestCaseExpectation(
             tone=None, text="Hello back", schema_id=None, structure=None, tool_mocks={"db": "error"}
         ),
@@ -78,7 +79,9 @@ def test_simulator_run_case_success(sample_test_case: TestCase) -> None:
     # Verification of Runner Interaction
     assert runner.invoked is True
     assert runner.last_inputs == sample_test_case.inputs
-    assert runner.last_context == sample_test_case.inputs.context
+    # Check that context was hydrated
+    assert runner.last_context is not None
+    assert runner.last_context.user_id == "test_user"
     assert runner.last_tool_mocks == sample_test_case.expectations.tool_mocks
 
     # Verification of Result Object

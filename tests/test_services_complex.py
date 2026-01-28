@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from coreason_identity.models import UserContext
 from pytest_mock import MockerFixture
 
 from coreason_assay.grader import BaseGrader
@@ -59,8 +60,18 @@ def test_upload_bec_propagates_error(mock_bec_manager: MagicMock, tmp_path: Any)
     zip_path = tmp_path / "bad.zip"
     zip_path.touch()
 
+    mock_context = MagicMock(spec=UserContext)
+    mock_context.user_id = "u"
+
     with pytest.raises(ValueError, match="Invalid ZIP"):
-        upload_bec(file_path=zip_path, extraction_dir=tmp_path, project_id="p", name="n", version="v", created_by="u")
+        upload_bec(
+            file_path=zip_path,
+            extraction_dir=tmp_path,
+            project_id="p",
+            name="n",
+            version="v",
+            user_context=mock_context,
+        )
 
 
 @pytest.mark.asyncio

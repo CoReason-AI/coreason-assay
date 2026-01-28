@@ -38,6 +38,18 @@ Run the CLI to upload a test corpus:
 poetry run coreason-assay upload path/to/bec_archive.zip
 ```
 
+### Server Mode (Service C)
+
+`coreason-assay` can also be run as a containerized microservice exposing a REST API.
+
+```sh
+# Start the server (requires Docker)
+docker build -t coreason-assay:0.3.0 .
+docker run -p 8000:8000 coreason-assay:0.3.0
+```
+
+The service exposes endpoints for uploading corpora (`POST /upload`) and running assays (`POST /run`). See `docs/usage.md` for details.
+
 ### Documentation
 
 For full documentation, including architecture details, usage guides, and examples, please visit the [docs](docs/) folder.

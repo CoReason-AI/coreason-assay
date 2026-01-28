@@ -11,6 +11,8 @@
 from pathlib import Path
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.bec_manager import BECManager
 from coreason_assay.engine import AssessmentEngine
 from coreason_assay.grader import BaseGrader
@@ -26,7 +28,7 @@ def upload_bec(
     project_id: str,
     name: str,
     version: str,
-    created_by: str,
+    user_context: UserContext,
 ) -> TestCorpus:
     """
     Ingests a Benchmark Evaluation Corpus (BEC) from a ZIP file.
@@ -38,7 +40,7 @@ def upload_bec(
         project_id: ID of the project this corpus belongs to.
         name: Name of the corpus.
         version: Version string for the corpus.
-        created_by: Identifier of the user creating the corpus.
+        user_context: Context of the user creating the corpus (Identity).
 
     Returns:
         TestCorpus: The constructed test corpus with loaded test cases.
@@ -54,7 +56,7 @@ def upload_bec(
         project_id=project_id,
         name=name,
         version=version,
-        created_by=created_by,
+        created_by=user_context.user_id,
         cases=cases,
     )
 
