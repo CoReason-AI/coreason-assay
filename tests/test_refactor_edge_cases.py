@@ -15,6 +15,8 @@ from uuid import uuid4
 
 import pytest
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.grader import ReasoningGrader
 from coreason_assay.interfaces import AgentRunner, LLMClient
 from coreason_assay.models import (
@@ -77,7 +79,7 @@ class MixedBehaviorAgent(AgentRunner):
         pass
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         mode = inputs.prompt
         if mode == "FAST_OK":
@@ -113,7 +115,7 @@ async def test_simulator_mixed_workload_robustness() -> None:
     cases = [
         TestCase(
             corpus_id=uuid4(),
-            inputs=TestCaseInput(prompt=p),
+            inputs=TestCaseInput(prompt=p, context={"user_id": "tester", "email": "tester@coreason.ai"}),
             expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
         )
         for p in prompts
@@ -175,7 +177,7 @@ async def test_run_suite_taskgroup_crash(mocker: Any) -> None:
         cases=[
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt="foo"),
+                inputs=TestCaseInput(prompt="foo", context={"user_id": "tester", "email": "tester@coreason.ai"}),
                 expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
             )
         ],
@@ -212,7 +214,7 @@ async def test_run_suite_error_result_creation_failure(mocker: Any) -> None:
         cases=[
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt="foo"),
+                inputs=TestCaseInput(prompt="foo", context={"user_id": "tester", "email": "tester@coreason.ai"}),
                 expectations=TestCaseExpectation(text=None, schema_id=None, structure=None, tone=None),
             )
         ],

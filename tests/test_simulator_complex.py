@@ -14,6 +14,8 @@ from uuid import uuid4
 
 import pytest
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -30,15 +32,15 @@ class MockAgentRunner(AgentRunner):
         self.delay = delay
         self.invoked = False
         self.last_inputs: Optional[TestCaseInput] = None
-        self.last_context: Optional[Dict[str, Any]] = None
+        self.last_context: Optional[UserContext] = None
         self.last_tool_mocks: Optional[Dict[str, Any]] = None
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         self.invoked = True
         self.last_inputs = inputs
-        self.last_context = context
+        self.last_context = user_context
         self.last_tool_mocks = tool_mocks
 
         if self.delay > 0:
@@ -55,15 +57,15 @@ class MockAgentRunner(AgentRunner):
 def base_test_case() -> TestCase:
     return TestCase(
         corpus_id=uuid4(),
-        inputs=TestCaseInput(prompt="Base Prompt", context={}),
+        inputs=TestCaseInput(prompt="Base Prompt", context={"user_id": "base_user", "email": "base_user@coreason.ai"}),
         expectations=TestCaseExpectation(tone=None, text="Base Expectation", schema_id=None, structure=None),
     )
 
 
 def test_simulator_empty_inputs(base_test_case: TestCase) -> None:
-    """Test handling of empty strings and empty dictionaries in inputs."""
+    """Test handling of empty strings and minimal valid context."""
     base_test_case.inputs.prompt = ""
-    base_test_case.inputs.context = {}
+    base_test_case.inputs.context = {"user_id": "test", "email": "test@coreason.ai"} # Minimal valid context
     base_test_case.expectations.tool_mocks = {}
 
     runner = MockAgentRunner(return_text="Response")
@@ -75,7 +77,8 @@ def test_simulator_empty_inputs(base_test_case: TestCase) -> None:
     assert result.passed is False  # default
     assert runner.last_inputs is not None
     assert runner.last_inputs.prompt == ""
-    assert runner.last_context == {}
+    assert runner.last_context.user_id == "test"
+    assert runner.last_context.email == "test@coreason.ai"
     assert runner.last_tool_mocks == {}
     assert result.actual_output.text == "Response"
 
@@ -148,7 +151,7 @@ def test_simulator_runner_returns_none_fields(base_test_case: TestCase) -> None:
 
     class NoneAgentRunner(AgentRunner):
         async def invoke(
-            self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+            self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
         ) -> TestResultOutput:
             return TestResultOutput(text=None, trace=None, structured_output=None)
 

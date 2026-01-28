@@ -14,6 +14,8 @@ from uuid import uuid4
 
 import pytest
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -37,14 +39,14 @@ class SpyAgentRunner(AgentRunner):
         self._lock = asyncio.Lock()
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         # Capture the inputs
         async with self._lock:
             self.invocations.append(
                 {
                     "prompt": inputs.prompt,
-                    "context": context,
+                    "context": user_context,
                     "tool_mocks": tool_mocks,
                 }
             )
@@ -84,7 +86,7 @@ async def test_run_suite_mixed_workload() -> None:
         cases.append(
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt=prompt),
+                inputs=TestCaseInput(prompt=prompt, context={"user_id": "tester", "email": "tester@coreason.ai"}),
                 expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             )
         )
@@ -144,10 +146,11 @@ async def test_run_suite_context_isolation() -> None:
     cases = []
 
     for i in range(case_count):
+        # We use user_id to test isolation since UserContext is strict
         cases.append(
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt=f"Case_{i}", context={"isolation_id": i, "common": "data"}),
+                inputs=TestCaseInput(prompt=f"Case_{i}", context={"user_id": f"user_{i}", "email": f"user_{i}@coreason.ai"}),
                 expectations=TestCaseExpectation(
                     tone=None, text="Expected", schema_id=None, structure=None, tool_mocks={"mock_id": i}
                 ),
@@ -166,7 +169,8 @@ async def test_run_suite_context_isolation() -> None:
 
     assert len(runner.invocations) == case_count
 
-    received_contexts = sorted([inv["context"]["isolation_id"] for inv in runner.invocations])
+    # Sort by the user_id integer suffix
+    received_contexts = sorted([int(inv["context"].user_id.split("_")[1]) for inv in runner.invocations])
     received_mocks = sorted([inv["tool_mocks"]["mock_id"] for inv in runner.invocations])
 
     expected_ids = list(range(case_count))
@@ -178,5 +182,5 @@ async def test_run_suite_context_isolation() -> None:
     for inv in runner.invocations:
         # prompt is "Case_{i}"
         i = int(inv["prompt"].split("_")[1])
-        assert inv["context"]["isolation_id"] == i
+        assert inv["context"].user_id == f"user_{i}"
         assert inv["tool_mocks"]["mock_id"] == i

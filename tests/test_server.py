@@ -65,6 +65,11 @@ def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
     mock_upload_bec.assert_called_once()
     call_args = mock_upload_bec.call_args
     assert call_args.kwargs["project_id"] == "p1"
+
+    # Verify user_context
+    assert "user_context" in call_args.kwargs
+    assert call_args.kwargs["user_context"].user_id == "me"
+
     # Check that file path passed to upload_bec exists (it is a temp file)
     file_path = call_args.kwargs["file_path"]
     assert isinstance(file_path, Path)

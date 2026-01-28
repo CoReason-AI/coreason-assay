@@ -15,6 +15,8 @@ from uuid import uuid4
 
 import pytest
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
     TestCase,
@@ -42,7 +44,7 @@ class AsyncSleepAgentRunner(AgentRunner):
         self.call_count = 0
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         self.call_count += 1
         await asyncio.sleep(self.delay_s)
@@ -58,7 +60,7 @@ class FlakyAgentRunner(AgentRunner):
         self.failure_trigger_prompt = failure_trigger_prompt
 
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         if inputs.prompt == self.failure_trigger_prompt:
             raise RuntimeError("Intentional Crash")
@@ -70,6 +72,8 @@ class FlakyAgentRunner(AgentRunner):
 
 @pytest.fixture
 def basic_corpus() -> TestCorpus:
+    # We must provide valid context for hydration
+    context = {"user_id": "tester", "email": "tester@coreason.ai"}
     return TestCorpus(
         project_id="proj_123",
         name="Test Corpus",
@@ -78,17 +82,17 @@ def basic_corpus() -> TestCorpus:
         cases=[
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt="Case 1"),
+                inputs=TestCaseInput(prompt="Case 1", context=context),
                 expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt="Case 2"),
+                inputs=TestCaseInput(prompt="Case 2", context=context),
                 expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
             TestCase(
                 corpus_id=uuid4(),
-                inputs=TestCaseInput(prompt="Case 3"),
+                inputs=TestCaseInput(prompt="Case 3", context=context),
                 expectations=TestCaseExpectation(tone=None, text="Expected", schema_id=None, structure=None),
             ),
         ],

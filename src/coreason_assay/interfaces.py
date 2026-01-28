@@ -11,6 +11,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.models import TestCaseInput, TestResultOutput
 
 
@@ -23,14 +25,14 @@ class AgentRunner(ABC):
 
     @abstractmethod
     async def invoke(
-        self, inputs: TestCaseInput, context: Dict[str, Any], tool_mocks: Dict[str, Any]
+        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
     ) -> TestResultOutput:
         """
         Invokes the agent with the given inputs and context.
 
         Args:
             inputs: The simulated input for the agent (prompt, files, etc.).
-            context: Additional context (user role, time, etc.).
+            user_context: Validated user identity context.
             tool_mocks: Mock configuration for tools (e.g., error injection).
 
         Returns:

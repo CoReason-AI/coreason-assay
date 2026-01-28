@@ -16,6 +16,8 @@ from typing import Annotated, Any, Dict, List, Optional
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
+from coreason_identity.models import UserContext
+
 from coreason_assay.grader import (
     BaseGrader,
     FaithfulnessGrader,
@@ -87,13 +89,17 @@ def upload_corpus(
         file.file.close()
 
     try:
+        # Construct UserContext from the author field (Identity Hydration)
+        # We synthesize an email since the legacy endpoint doesn't provide it.
+        user_context = UserContext(user_id=author, email=f"{author}@coreason.ai")
+
         corpus = upload_bec(
             file_path=zip_path,
             extraction_dir=extraction_dir,
             project_id=project_id,
             name=name,
             version=version,
-            created_by=author,
+            user_context=user_context,
         )
         return corpus
     except Exception as e:

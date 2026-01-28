@@ -17,6 +17,8 @@ from pytest_mock import MockerFixture
 
 from coreason_assay.grader import BaseGrader
 from coreason_assay.interfaces import AgentRunner
+from coreason_identity.models import UserContext
+
 from coreason_assay.models import (
     ReportCard,
     Score,
@@ -77,6 +79,11 @@ def test_upload_bec(mock_bec_manager: MagicMock, tmp_path: Any) -> None:
     zip_path.touch()
     extract_dir = tmp_path / "extract"
 
+    # Mock UserContext
+    # We use a dummy object if UserContext is not easily mockable, or specific mocking
+    mock_context = MagicMock(spec=UserContext)
+    mock_context.user_id = "user-1"
+
     # Execute
     corpus = upload_bec(
         file_path=zip_path,
@@ -84,7 +91,7 @@ def test_upload_bec(mock_bec_manager: MagicMock, tmp_path: Any) -> None:
         project_id="proj-123",
         name="Test Corpus",
         version="v1.0",
-        created_by="user-1",
+        user_context=mock_context,
     )
 
     # Verify
@@ -95,6 +102,7 @@ def test_upload_bec(mock_bec_manager: MagicMock, tmp_path: Any) -> None:
     assert len(corpus.cases) == 1
     # Check if corpus_id was unified
     assert corpus.cases[0].corpus_id == corpus.id
+    assert corpus.created_by == "user-1"
 
 
 @pytest.mark.asyncio
