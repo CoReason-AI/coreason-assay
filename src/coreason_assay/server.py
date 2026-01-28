@@ -13,6 +13,7 @@ import tempfile
 from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional
 
+from coreason_identity.models import UserContext
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel, Field
 
@@ -30,7 +31,7 @@ from coreason_assay.models import ReportCard, TestCorpus
 from coreason_assay.services import run_suite, upload_bec
 from coreason_assay.utils.logger import logger
 
-app = FastAPI(title="CoReason Assay Service", version="0.3.0")
+app = FastAPI(title="CoReason Assay Service", version="0.4.0")
 
 # Global dependencies
 _agent_runner: Optional[AgentRunner] = None
@@ -56,7 +57,7 @@ class RunRequest(BaseModel):
 
 @app.get("/health")  # type: ignore[misc]
 def health() -> Dict[str, str]:
-    return {"status": "healthy", "service": "coreason-assay", "version": "0.3.0"}
+    return {"status": "healthy", "service": "coreason-assay", "version": "0.4.0"}
 
 
 @app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
@@ -87,13 +88,17 @@ def upload_corpus(
         file.file.close()
 
     try:
+        # Construct UserContext from the author field (Identity Hydration)
+        # We synthesize an email since the legacy endpoint doesn't provide it.
+        user_context = UserContext(user_id=author, email=f"{author}@coreason.ai")
+
         corpus = upload_bec(
             file_path=zip_path,
             extraction_dir=extraction_dir,
             project_id=project_id,
             name=name,
             version=version,
-            created_by=author,
+            user_context=user_context,
         )
         return corpus
     except Exception as e:

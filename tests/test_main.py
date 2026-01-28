@@ -54,14 +54,14 @@ def test_upload_success() -> None:
         assert result.exit_code == 0
         assert "Successfully uploaded Corpus: Test Corpus" in result.stdout
 
-        mock_upload.assert_called_once_with(
-            file_path=Path("dummy.zip"),
-            extraction_dir=Path("out_dir"),
-            project_id="proj-1",
-            name="Corpus 1",
-            version="1.0",
-            created_by="tester",
-        )
+        mock_upload.assert_called_once()
+        args = mock_upload.call_args.kwargs
+        assert args["file_path"] == Path("dummy.zip")
+        assert args["extraction_dir"] == Path("out_dir")
+        assert args["project_id"] == "proj-1"
+        assert args["name"] == "Corpus 1"
+        assert args["version"] == "1.0"
+        assert args["user_context"].user_id == "tester"
 
 
 def test_upload_failure() -> None:
