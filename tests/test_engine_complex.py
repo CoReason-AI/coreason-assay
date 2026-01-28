@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+
 from coreason_assay.engine import AssessmentEngine
 from coreason_assay.grader import BaseGrader
 from coreason_assay.models import (

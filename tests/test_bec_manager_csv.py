@@ -15,8 +15,9 @@ from unittest.mock import patch
 from uuid import UUID, uuid4
 
 import pytest
-from coreason_assay.bec_manager import BECManager
 from pydantic import ValidationError
+
+from coreason_assay.bec_manager import BECManager
 
 
 class TestBECManagerCSV:

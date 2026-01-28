@@ -4,10 +4,11 @@ from typing import Any, Dict
 from uuid import uuid4
 
 import pytest
+from coreason_identity.models import UserContext
+
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import TestCase, TestCaseExpectation, TestCaseInput, TestResultOutput
 from coreason_assay.simulator import Simulator
-from coreason_identity.models import UserContext
 
 
 class MockRunner(AgentRunner):

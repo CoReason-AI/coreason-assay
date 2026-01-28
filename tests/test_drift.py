@@ -12,6 +12,7 @@ from typing import Generator, List, Tuple
 from uuid import UUID, uuid4
 
 import pytest
+
 from coreason_assay.drift import generate_drift_report
 from coreason_assay.models import AggregateMetric, DriftReport, ReportCard, Score, TestResult, TestResultOutput, TestRun
 

@@ -13,6 +13,9 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from coreason_identity.models import UserContext
+from pytest_mock import MockerFixture
+
 from coreason_assay.grader import BaseGrader
 from coreason_assay.interfaces import AgentRunner
 from coreason_assay.models import (
@@ -23,8 +26,6 @@ from coreason_assay.models import (
     TestResult,
 )
 from coreason_assay.services import run_suite, upload_bec
-from coreason_identity.models import UserContext
-from pytest_mock import MockerFixture
 
 
 class BrokenGrader(BaseGrader):

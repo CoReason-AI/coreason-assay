@@ -6,10 +6,11 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from fastapi.testclient import TestClient
+
 from coreason_assay.interfaces import AgentRunner, LLMClient
 from coreason_assay.models import AggregateMetric, ReportCard, TestCorpus
 from coreason_assay.server import app, set_dependencies
-from fastapi.testclient import TestClient
 
 client = TestClient(app)
 

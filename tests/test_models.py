@@ -11,6 +11,8 @@
 from uuid import uuid4
 
 import pytest
+from pydantic import ValidationError
+
 from coreason_assay.models import (
     Score,
     TestCase,
@@ -22,7 +24,6 @@ from coreason_assay.models import (
     TestRun,
     TestRunStatus,
 )
-from pydantic import ValidationError
 
 
 class TestModels:

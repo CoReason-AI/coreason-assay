@@ -11,6 +11,7 @@
 from uuid import uuid4
 
 import pytest
+
 from coreason_assay.grader import ForbiddenContentGrader
 from coreason_assay.models import TestResult, TestResultOutput
 

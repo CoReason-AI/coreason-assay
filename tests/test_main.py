@@ -11,9 +11,10 @@
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+from typer.testing import CliRunner
+
 from coreason_assay.main import app
 from coreason_assay.models import TestCorpus
-from typer.testing import CliRunner
 
 runner = CliRunner()
 
