@@ -150,7 +150,10 @@ async def test_run_suite_context_isolation() -> None:
                 corpus_id=uuid4(),
                 inputs=TestCaseInput(
                     prompt=f"Case_{i}",
-                    context={"user_id": f"user_{i}", "email": f"user_{i}@coreason.ai"},
+                    context={
+                        "user_id": f"user_{i}",
+                        "email": f"user_{i}@coreason.ai",
+                    },
                 ),
                 expectations=TestCaseExpectation(
                     tone=None, text="Expected", schema_id=None, structure=None, tool_mocks={"mock_id": i}

@@ -63,7 +63,7 @@ def base_test_case() -> TestCase:
 def test_simulator_empty_inputs(base_test_case: TestCase) -> None:
     """Test handling of empty strings and minimal valid context."""
     base_test_case.inputs.prompt = ""
-    base_test_case.inputs.context = {"user_id": "test", "email": "test@coreason.ai"} # Minimal valid context
+    base_test_case.inputs.context = {"user_id": "test", "email": "test@coreason.ai"}  # Minimal valid context
     base_test_case.expectations.tool_mocks = {}
 
     runner = MockAgentRunner(return_text="Response")

@@ -12,7 +12,10 @@ from coreason_identity.models import UserContext
 
 class MockRunner(AgentRunner):
     async def invoke(
-        self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
+        self,
+        inputs: TestCaseInput,
+        user_context: UserContext,
+        tool_mocks: Dict[str, Any],
     ) -> TestResultOutput:
         return TestResultOutput(text="OK", trace=None, structured_output=None)
 
@@ -28,7 +31,13 @@ async def test_identity_hydration_failure() -> None:
         corpus_id=uuid4(),
         inputs=TestCaseInput(prompt="p", context={}),
         expectations=TestCaseExpectation(
-            text="e", schema_id=None, structure=None, reasoning=[], forbidden_content=[], tool_mocks={}, tone=None
+            text="e",
+            schema_id=None,
+            structure=None,
+            reasoning=[],
+            forbidden_content=[],
+            tool_mocks={},
+            tone=None,
         ),
     )
 
