@@ -57,7 +57,7 @@ class RunRequest(BaseModel):
 
 @app.get("/health")  # type: ignore[misc]
 def health() -> Dict[str, str]:
-    return {"status": "healthy", "service": "coreason-assay", "version": "0.3.1"}
+    return {"status": "healthy", "service": "coreason-assay", "version": "0.2.0"}
 
 
 @app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
@@ -104,6 +104,9 @@ def upload_corpus(
     except Exception as e:
         logger.exception("Failed to upload/ingest corpus")
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        if zip_path.exists():
+            zip_path.unlink()
 
 
 @app.post("/run", response_model=ReportCard)  # type: ignore[misc]
