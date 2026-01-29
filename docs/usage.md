@@ -71,7 +71,7 @@ Returns the service health status and version.
 **Example:**
 ```bash
 curl http://localhost:8000/health
-# Output: {"status": "healthy", "service": "coreason-assay", "version": "0.3.0"}
+# Output: {"status": "healthy", "service": "coreason-assay", "version": "0.4.0"}
 ```
 
 ## Running the Server
@@ -85,6 +85,6 @@ poetry run uvicorn coreason_assay.server:app --reload
 
 **Using Docker:**
 ```bash
-docker build -t coreason-assay:0.3.0 .
-docker run -p 8000:8000 coreason-assay:0.3.0
+docker build -t coreason-assay:0.4.0 .
+docker run -p 8000:8000 coreason-assay:0.4.0
 ```

@@ -44,8 +44,8 @@ poetry run coreason-assay upload path/to/bec_archive.zip
 
 ```sh
 # Start the server (requires Docker)
-docker build -t coreason-assay:0.3.0 .
-docker run -p 8000:8000 coreason-assay:0.3.0
+docker build -t coreason-assay:0.4.0 .
+docker run -p 8000:8000 coreason-assay:0.4.0
 ```
 
 The service exposes endpoints for uploading corpora (`POST /upload`) and running assays (`POST /run`). See `docs/usage.md` for details.

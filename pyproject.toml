@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "coreason_assay"
-version = "0.3.1"
+version = "0.4.0"
 description = "Quality Control (QC) laboratory of the CoReason platform"
 authors = ["Gowtham A Rao <gowtham.rao@coreason.ai>"]
 license = "Prosperity-3.0"
@@ -39,7 +39,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "coreason_assay"
-version = "0.3.1"
+version = "0.4.0"
 description = "Quality Control (QC) laboratory of the CoReason platform"
 readme = "README.md"
 requires-python = ">=3.11"

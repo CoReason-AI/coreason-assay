@@ -31,7 +31,7 @@ from coreason_assay.models import ReportCard, TestCorpus
 from coreason_assay.services import run_suite, upload_bec
 from coreason_assay.utils.logger import logger
 
-app = FastAPI(title="CoReason Assay Service", version="0.3.1")
+app = FastAPI(title="CoReason Assay Service", version="0.4.0")
 
 # Global dependencies
 _agent_runner: Optional[AgentRunner] = None
@@ -57,7 +57,7 @@ class RunRequest(BaseModel):
 
 @app.get("/health")  # type: ignore[misc]
 def health() -> Dict[str, str]:
-    return {"status": "healthy", "service": "coreason-assay", "version": "0.3.1"}
+    return {"status": "healthy", "service": "coreason-assay", "version": "0.4.0"}
 
 
 @app.post("/upload", response_model=TestCorpus)  # type: ignore[misc]
@@ -78,14 +78,13 @@ def upload_corpus(
         shutil.rmtree(base_dir)
     base_dir.mkdir(parents=True, exist_ok=True)
 
-    zip_path = base_dir / "corpus.zip"
     extraction_dir = base_dir / "extracted"
 
-    try:
-        with zip_path.open("wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-    finally:
-        file.file.close()
+    # Use a named temporary file to avoid race conditions on the zip itself
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".zip") as tmp_file:
+        shutil.copyfileobj(file.file, tmp_file)
+        tmp_zip_path = Path(tmp_file.name)
+    file.file.close()
 
     try:
         # Construct UserContext from the author field (Identity Hydration)
@@ -93,7 +92,7 @@ def upload_corpus(
         user_context = UserContext(user_id=author, email=f"{author}@coreason.ai")
 
         corpus = upload_bec(
-            file_path=zip_path,
+            file_path=tmp_zip_path,
             extraction_dir=extraction_dir,
             project_id=project_id,
             name=name,
@@ -104,6 +103,9 @@ def upload_corpus(
     except Exception as e:
         logger.exception("Failed to upload/ingest corpus")
         raise HTTPException(status_code=400, detail=str(e)) from e
+    finally:
+        if tmp_zip_path.exists():
+            tmp_zip_path.unlink()
 
 
 @app.post("/run", response_model=ReportCard)  # type: ignore[misc]
