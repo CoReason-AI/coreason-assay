@@ -9,6 +9,7 @@ These are the core dependencies required to run the `coreason-assay` library and
 - **JSONSchema**: `^4.26.0` - Validation of JSON structures against schemas.
 - **Typer**: `^0.21.1` - CLI application framework.
 - **Pydantic Settings**: `^2.12.0` - Configuration management using environment variables.
+- **HTTPX**: (Latest Stable) - Async HTTP client (standardized async stack).
 
 ### Server Dependencies (Service C)
 Required for running the `coreason-assay` as a microservice (Server Mode).
@@ -28,5 +29,4 @@ Required for testing, linting, and documentation generation.
 - **MkDocs**: `^1.6.0` - Documentation generator.
 - **MkDocs Material**: `^9.5.26` - Material theme for MkDocs.
 - **Pytest-Mock**: `^3.15.1` - Mocking fixtures for Pytest.
-- **HTTPX**: (Latest Stable) - Async HTTP client (used for testing FastAPI endpoints).
 - **Mypy**: `^1.19.1` - Static type checker.

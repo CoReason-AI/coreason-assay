@@ -44,7 +44,7 @@ def mock_llm_client() -> MagicMock:
 def test_health() -> None:
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "service": "coreason-assay", "version": "0.3.1"}
+    assert response.json() == {"status": "healthy", "service": "coreason-assay", "version": "0.4.0"}
 
 
 def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
@@ -73,9 +73,8 @@ def test_upload_corpus(mock_upload_bec: MagicMock) -> None:
     # Check that file path passed to upload_bec exists (it is a temp file)
     file_path = call_args.kwargs["file_path"]
     assert isinstance(file_path, Path)
-    # The file should exist during the call, but might be cleaned up?
-    # No, in my implementation I keep it.
-    assert file_path.exists()
+    # The file should be cleaned up after the call
+    assert not file_path.exists()
 
 
 def test_upload_corpus_error(mock_upload_bec: MagicMock) -> None:
