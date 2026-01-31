@@ -11,6 +11,7 @@
 from pathlib import Path
 from typing import Any, Callable, Coroutine, List, Optional, Union
 
+from coreason_manifest.definitions.agent import AgentDefinition
 from coreason_identity.models import UserContext
 
 from coreason_assay.bec_manager import BECManager
@@ -76,6 +77,7 @@ async def run_suite(
     agent_draft_version: str,
     graders: List[BaseGrader],
     on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
+    agent_definition: Optional[AgentDefinition] = None,
 ) -> ReportCard:
     """
     Executes the full test suite for a given corpus against an agent.
@@ -87,6 +89,7 @@ async def run_suite(
         agent_draft_version: The version string of the agent being tested.
         graders: List of graders to evaluate the results.
         on_progress: Optional async callback for progress updates.
+        agent_definition: Optional AgentDefinition of the agent being tested.
 
     Returns:
         ReportCard: The final graded report card.
@@ -104,6 +107,7 @@ async def run_suite(
         corpus=corpus,
         agent_draft_version=agent_draft_version,
         on_progress=on_progress,
+        agent=agent_definition,
     )
 
     logger.info(f"Completed test suite run {report_card.run_id}. Pass Rate: {report_card.pass_rate:.2%}")

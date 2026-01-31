@@ -47,7 +47,7 @@ class MockAgentRunner(AgentRunner):
 
         return TestResultOutput(
             text=self.return_text,
-            trace="Mock trace",
+            trace=None,
             structured_output={"complex": {"nested": [1, 2, 3]}} if self.return_text else None,
         )
 

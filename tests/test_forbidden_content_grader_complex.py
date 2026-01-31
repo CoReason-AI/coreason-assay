@@ -23,7 +23,7 @@ def complex_result() -> TestResult:
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="The classification of the category is C++. Also, check the résumé.",
-            trace="log",
+            trace=None,
             structured_output=None,
         ),
         metrics={"latency_ms": 100},
@@ -108,7 +108,7 @@ def test_forbidden_content_whitespace_handling() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="System error code 500.", trace="log", structured_output=None),
+        actual_output=TestResultOutput(text="System error code 500.", trace=None, structured_output=None),
         metrics={},
         passed=False,
     )

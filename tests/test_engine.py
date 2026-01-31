@@ -86,7 +86,7 @@ async def test_run_assay_basic_flow(
     )
 
     # Configure run_suite to call the callback and return results
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -139,7 +139,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
         reasoning="Failed",
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -170,7 +170,7 @@ async def test_on_progress_passthrough(
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -209,7 +209,7 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -241,7 +241,7 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]

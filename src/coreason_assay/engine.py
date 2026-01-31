@@ -10,6 +10,8 @@
 
 from typing import Any, Callable, Coroutine, List, Optional
 
+from coreason_manifest.definitions.agent import AgentDefinition
+
 from coreason_assay.grader import BaseGrader
 from coreason_assay.models import ReportCard, TestCorpus, TestResult
 from coreason_assay.reporting import generate_report_card
@@ -32,7 +34,13 @@ class AssessmentEngine:
         self.simulator = simulator
         self.graders = graders
 
-    def _grade_result(self, result: TestResult, case_inputs: Any, case_expectations: Any) -> None:
+    def _grade_result(
+        self,
+        result: TestResult,
+        case_inputs: Any,
+        case_expectations: Any,
+        agent: Optional[AgentDefinition] = None,
+    ) -> None:
         """
         Applies all graders to a single result and updates it in-place.
         """
@@ -45,7 +53,7 @@ class AssessmentEngine:
 
         for grader in self.graders:
             try:
-                score = grader.grade(result, inputs=case_inputs, expectations=expectations_dict)
+                score = grader.grade(result, inputs=case_inputs, expectations=expectations_dict, agent=agent)
                 result.scores.append(score)
             except Exception as e:
                 logger.error(f"Grader {grader.__class__.__name__} failed for case {result.case_id}: {e}")
@@ -70,6 +78,7 @@ class AssessmentEngine:
         corpus: TestCorpus,
         agent_draft_version: str,
         on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> ReportCard:
         """
         Executes the full assay lifecycle: Run -> Grade -> Report.
@@ -79,6 +88,7 @@ class AssessmentEngine:
             agent_draft_version: The version string of the agent.
             on_progress: Optional async callback for real-time updates.
                          Receives (completed_count, total_count, graded_result).
+            agent: Optional AgentDefinition of the agent being tested.
 
         Returns:
             ReportCard: The final summary of the run.
@@ -96,7 +106,7 @@ class AssessmentEngine:
                 return
 
             # 2. Grade the result immediately
-            self._grade_result(result, case.inputs, case.expectations)
+            self._grade_result(result, case.inputs, case.expectations, agent=agent)
 
             # 3. Forward to the user's callback
             if on_progress:
@@ -107,6 +117,7 @@ class AssessmentEngine:
             corpus=corpus,
             agent_draft_version=agent_draft_version,
             on_progress=_progress_interceptor,
+            agent=agent,
         )
 
         # Safety check: ensure all results are graded (in case run_suite has edge cases where callback isn't called?)

@@ -11,6 +11,7 @@
 from uuid import uuid4
 
 import pytest
+from coreason_manifest.definitions.simulation import SimulationTrace
 from pydantic import ValidationError
 
 from coreason_assay.models import (
@@ -61,7 +62,14 @@ class TestModels:
     def test_test_result_creation(self) -> None:
         run_id = uuid4()
         case_id = uuid4()
-        output = TestResultOutput(text="Response", trace="Log trace", structured_output=None)
+        trace = SimulationTrace(
+            trace_id=uuid4(),
+            agent_version="1.0",
+            steps=[],
+            outcome={},
+            metrics={}
+        )
+        output = TestResultOutput(text="Response", trace=trace, structured_output=None)
         score = Score(name="accuracy", value=1.0, passed=True, reasoning="Perfect match")
 
         result = TestResult(run_id=run_id, case_id=case_id, actual_output=output, passed=True, scores=[score])
@@ -69,9 +77,18 @@ class TestModels:
         assert result.run_id == run_id
         assert result.case_id == case_id
         assert result.actual_output.text == "Response"
+        assert result.actual_output.trace == trace
         assert result.passed is True
         assert result.scores[0].name == "accuracy"
         assert result.scores[0].value == 1.0
+
+    def test_test_result_error(self) -> None:
+        run_id = uuid4()
+        case_id = uuid4()
+        output = TestResultOutput(text=None, trace=None, structured_output=None, error="Something went wrong")
+        result = TestResult(run_id=run_id, case_id=case_id, actual_output=output, passed=False, scores=[])
+
+        assert result.actual_output.error == "Something went wrong"
 
     def test_validation_error(self) -> None:
         with pytest.raises(ValidationError):

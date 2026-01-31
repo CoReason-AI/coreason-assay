@@ -42,7 +42,7 @@ def test_nan_value_pass_rate_accuracy() -> None:
         passed=True,
         actual_output=TestResultOutput(
             text="ok",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         metrics={},
@@ -57,7 +57,7 @@ def test_nan_value_pass_rate_accuracy() -> None:
         passed=True,
         actual_output=TestResultOutput(
             text="ok",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         metrics={},
@@ -71,7 +71,7 @@ def test_nan_value_pass_rate_accuracy() -> None:
         passed=False,
         actual_output=TestResultOutput(
             text="fail",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         metrics={},
@@ -125,7 +125,7 @@ def test_mixed_empty_and_valid_scores() -> None:
         passed=True,
         actual_output=TestResultOutput(
             text="ok",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         scores=[Score(name="MyScore", value=10, passed=True, reasoning="ok")],
@@ -138,7 +138,7 @@ def test_mixed_empty_and_valid_scores() -> None:
         passed=True,
         actual_output=TestResultOutput(
             text="ok",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         scores=[],  # No scores here

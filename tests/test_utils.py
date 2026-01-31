@@ -8,10 +8,17 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+import json
 import logging
 from unittest.mock import MagicMock, patch
+from uuid import uuid4
+
+import pytest
+from coreason_manifest.definitions.agent import AgentDefinition
+from coreason_manifest.definitions.simulation import SimulationTrace
 
 from coreason_assay.utils.logger import logger, setup_logger
+from coreason_assay.utils.parsing import load_agent, load_trace
 
 
 def test_logger_initialization() -> None:
@@ -61,3 +68,34 @@ def test_logger_mkdir_logic() -> None:
 
         # Verify handler creation
         mock_handler.assert_called_once()
+
+
+def test_load_trace_valid() -> None:
+    trace_data = {
+        "trace_id": str(uuid4()),
+        "agent_version": "1.0",
+        "steps": [],
+        "outcome": {},
+        "metrics": {}
+    }
+    json_str = json.dumps(trace_data)
+    trace = load_trace(json_str)
+    assert isinstance(trace, SimulationTrace)
+    assert str(trace.trace_id) == trace_data["trace_id"]
+
+
+def test_load_agent_valid() -> None:
+    # Minimal AgentDefinition
+    agent_data = {
+        "name": "Test Agent",
+        "version": "1.0.0",
+        "config": {
+            "system_prompt": "You are a bot.",
+            "model_config": {}
+        },
+        "integrity_hash": "hash123"
+    }
+    json_str = json.dumps(agent_data)
+    agent = load_agent(json_str)
+    assert isinstance(agent, AgentDefinition)
+    assert agent.name == "Test Agent"

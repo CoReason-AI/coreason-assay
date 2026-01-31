@@ -22,7 +22,7 @@ def mock_result_with_text() -> TestResult:
         run_id=uuid4(),
         case_id=uuid4(),
         actual_output=TestResultOutput(
-            text="The patient has a headache and should take aspirin.", trace="log", structured_output=None
+            text="The patient has a headache and should take aspirin.", trace=None, structured_output=None
         ),
         metrics={"latency_ms": 100},
         passed=False,
@@ -104,7 +104,7 @@ def test_forbidden_content_no_text_output() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace="log", structured_output=None),
+        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
         metrics={},
         passed=False,
     )

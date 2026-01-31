@@ -21,6 +21,7 @@
 -   **Simulation**: Run agents in a controlled sandbox with mocked tools and injected context.
 -   **Glass Box Grading**: Evaluate not just the answer, but the reasoning process (Faithfulness, Alignment, Tone).
 -   **Report Cards**: Generate detailed reports with drift detection and pass/fail metrics.
+-   **Shared Kernel Integration**: Consumes strict `SimulationTrace` and `AgentDefinition` models from `coreason-manifest` for type-safe interoperability.
 
 ## Quick Start
 
@@ -44,8 +45,8 @@ poetry run coreason-assay upload path/to/bec_archive.zip
 
 ```sh
 # Start the server (requires Docker)
-docker build -t coreason-assay:0.4.0 .
-docker run -p 8000:8000 coreason-assay:0.4.0
+docker build -t coreason-assay:0.5.0 .
+docker run -p 8000:8000 coreason-assay:0.5.0
 ```
 
 The service exposes endpoints for uploading corpora (`POST /upload`) and running assays (`POST /run`). See `docs/usage.md` for details.

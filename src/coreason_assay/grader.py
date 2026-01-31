@@ -12,6 +12,7 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
+from coreason_manifest.definitions.agent import AgentDefinition
 from jsonschema import SchemaError, ValidationError, validate
 
 from coreason_assay.interfaces import LLMClient
@@ -33,6 +34,7 @@ class BaseGrader(ABC):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         """
         Evaluate the result and return a Score.
@@ -43,6 +45,7 @@ class BaseGrader(ABC):
             expectations: Optional dictionary of specific expectations for this grader
                           (e.g., specific schema ID, custom threshold).
                           If not provided, the grader may use defaults or data from result.
+            agent: Optional AgentDefinition of the agent being tested.
         """
         pass  # pragma: no cover
 
@@ -86,6 +89,7 @@ class LatencyGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         latency = result.metrics.get("latency_ms")
         if latency is None:
@@ -120,6 +124,7 @@ class JsonSchemaGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         structured_output = result.actual_output.structured_output
 
@@ -181,6 +186,7 @@ class ReasoningGrader(LLMGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         # Check for reasoning expectations
         required_steps = expectations.get("reasoning") if expectations else None
@@ -193,14 +199,16 @@ class ReasoningGrader(LLMGrader):
                 reasoning="No reasoning expectations provided.",
             )
 
-        trace = result.actual_output.trace or ""
+        trace_obj = result.actual_output.trace
+        # Convert structured trace to string for LLM consumption
+        trace_str = trace_obj.model_dump_json(indent=2) if trace_obj else ""
         text = result.actual_output.text or ""
 
         # Format steps list
         formatted_steps = "\n".join([f"{i + 1}. {step}" for i, step in enumerate(required_steps)])
 
         # Use Template substitution
-        prompt = REASONING_GRADER_PROMPT.safe_substitute(REQUIRED_STEPS=formatted_steps, TRACE=trace, TEXT=text)
+        prompt = REASONING_GRADER_PROMPT.safe_substitute(REQUIRED_STEPS=formatted_steps, TRACE=trace_str, TEXT=text)
 
         try:
             analysis = self._get_llm_analysis(prompt)
@@ -276,6 +284,7 @@ class ForbiddenContentGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         forbidden_list = expectations.get("forbidden_content") if expectations else None
 
@@ -334,6 +343,7 @@ class FaithfulnessGrader(LLMGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         # Extract context
         context_str = ""
@@ -406,6 +416,7 @@ class ToneGrader(LLMGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Score:
         # Determine expected tone
         expected_tone = self.default_tone

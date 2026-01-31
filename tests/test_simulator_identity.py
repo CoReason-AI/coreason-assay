@@ -45,5 +45,5 @@ async def test_identity_hydration_failure() -> None:
     result = await simulator.run_case(case, uuid4())
 
     assert result.passed is False
-    assert result.actual_output.trace is not None
-    assert "Identity Hydration Failed" in result.actual_output.trace
+    assert result.actual_output.error is not None
+    assert "Identity Hydration Failed" in result.actual_output.error

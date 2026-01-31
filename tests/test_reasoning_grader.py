@@ -13,6 +13,7 @@ from typing import Any, Dict, Optional
 from uuid import uuid4
 
 import pytest
+from coreason_manifest.definitions.simulation import SimulationTrace
 
 from coreason_assay.grader import ReasoningGrader
 from coreason_assay.interfaces import LLMClient
@@ -47,12 +48,38 @@ def reasoning_grader(mock_llm_client: MockLLMClient) -> ReasoningGrader:
 
 @pytest.fixture
 def basic_result() -> TestResult:
+    trace = SimulationTrace(
+        trace_id=uuid4(),
+        agent_version="1.0",
+        steps=[
+            {
+                "step_id": str(uuid4()),
+                "timestamp": "2023-01-01T00:00:00Z",
+                "node_id": "node_1",
+                "inputs": {},
+                "thought": "Step 1: Check glucose.",
+                "action": {},
+                "observation": {},
+            },
+            {
+                "step_id": str(uuid4()),
+                "timestamp": "2023-01-01T00:00:01Z",
+                "node_id": "node_2",
+                "inputs": {},
+                "thought": "Step 2: Compare to limit.",
+                "action": {},
+                "observation": {},
+            }
+        ],
+        outcome={"summary": "The patient has diabetes."},
+        metrics={}
+    )
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="The patient has diabetes.",
-            trace="Step 1: Check glucose. Step 2: Compare to limit.",
+            trace=trace,
             structured_output=None,
         ),
         metrics={},

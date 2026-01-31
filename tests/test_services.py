@@ -36,6 +36,7 @@ class MockGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Optional[Any] = None,
     ) -> Score:
         return cast(Score, MagicMock())
 
@@ -133,7 +134,7 @@ async def test_run_suite(mock_simulator: MagicMock, mock_engine: MagicMock) -> N
 
     # Verify execution
     mock_engine_instance.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="draft-v1", on_progress=None
+        corpus=corpus, agent_draft_version="draft-v1", on_progress=None, agent=None
     )
 
     assert report == expected_report
@@ -161,5 +162,5 @@ async def test_run_suite_with_progress(mock_simulator: MagicMock, mock_engine: M
 
     # Verify
     mock_engine_instance.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="v1", on_progress=progress_cb
+        corpus=corpus, agent_draft_version="v1", on_progress=progress_cb, agent=None
     )

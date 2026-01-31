@@ -13,6 +13,7 @@ import time
 from typing import Any, Callable, Coroutine, List, Optional, Tuple
 from uuid import UUID
 
+from coreason_manifest.definitions.agent import AgentDefinition
 from coreason_identity.models import UserContext
 
 from coreason_assay.interfaces import AgentRunner
@@ -71,7 +72,7 @@ class Simulator:
         except Exception as e:
             logger.exception(f"Error invoking agent for case {case.id}")
             # Return a failure result with the error message
-            output = TestResultOutput(text=None, trace=f"Agent invocation failed: {str(e)}", structured_output=None)
+            output = TestResultOutput(text=None, trace=None, structured_output=None, error=f"Agent invocation failed: {str(e)}")
 
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
@@ -95,6 +96,7 @@ class Simulator:
         corpus: TestCorpus,
         agent_draft_version: str,
         on_progress: Optional[Callable[[int, int, TestResult], Coroutine[Any, Any, None]]] = None,
+        agent: Optional[AgentDefinition] = None,
     ) -> Tuple[TestRun, List[TestResult]]:
         """
         Runs an entire test corpus concurrently.
@@ -103,6 +105,7 @@ class Simulator:
             corpus: The TestCorpus to execute.
             agent_draft_version: Identifier for the agent version being tested.
             on_progress: Optional async callback (completed_count, total_count, last_result).
+            agent: Optional AgentDefinition of the agent being tested.
 
         Returns:
             Tuple[TestRun, List[TestResult]]: The finalized TestRun object and list of results.
@@ -147,7 +150,7 @@ class Simulator:
                 # or at least not leave the suite hanging.
                 # Since run_case failed, we create a synthetic failure result.
                 try:
-                    failed_output = TestResultOutput(text=None, trace=f"System Error: {str(e)}", structured_output=None)
+                    failed_output = TestResultOutput(text=None, trace=None, structured_output=None, error=f"System Error: {str(e)}")
                     failed_result = TestResult(
                         run_id=test_run.id,
                         case_id=case.id,

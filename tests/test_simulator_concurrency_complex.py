@@ -56,11 +56,11 @@ class SpyAgentRunner(AgentRunner):
         elif "SLOW" in inputs.prompt:
             await asyncio.sleep(0.05)
             return TestResultOutput(
-                text=f"Slow response to {inputs.prompt}", trace="Slow Trace", structured_output=None
+                text=f"Slow response to {inputs.prompt}", trace=None, structured_output=None
             )
         else:
             return TestResultOutput(
-                text=f"Fast response to {inputs.prompt}", trace="Fast Trace", structured_output=None
+                text=f"Fast response to {inputs.prompt}", trace=None, structured_output=None
             )
 
 
@@ -114,7 +114,7 @@ async def test_run_suite_mixed_workload() -> None:
         if "CRASH" in prompt:
             assert res.passed is False
             assert res.actual_output.text is None
-            assert res.actual_output.trace is not None and "Crashed on" in res.actual_output.trace
+            assert res.actual_output.error is not None and "Crashed on" in res.actual_output.error
             failed_count += 1
         elif "SLOW" in prompt:
             assert res.actual_output.text == f"Slow response to {prompt}"
