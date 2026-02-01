@@ -18,7 +18,7 @@ class MockRunner(AgentRunner):
         user_context: UserContext,
         tool_mocks: Dict[str, Any],
     ) -> TestResultOutput:
-        return TestResultOutput(text="OK", trace=None, structured_output=None)
+        return TestResultOutput(error=None, text="OK", trace=None, structured_output=None)
 
 
 @pytest.mark.asyncio

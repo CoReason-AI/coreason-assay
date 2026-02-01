@@ -108,7 +108,7 @@ def test_forbidden_content_whitespace_handling() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="System error code 500.", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="System error code 500.", trace=None, structured_output=None),
         metrics={},
         passed=False,
     )

@@ -69,7 +69,7 @@ class TestModels:
             outcome={},
             metrics={}
         )
-        output = TestResultOutput(text="Response", trace=trace, structured_output=None)
+        output = TestResultOutput(error=None, text="Response", trace=trace, structured_output=None)
         score = Score(name="accuracy", value=1.0, passed=True, reasoning="Perfect match")
 
         result = TestResult(run_id=run_id, case_id=case_id, actual_output=output, passed=True, scores=[score])

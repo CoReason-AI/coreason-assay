@@ -136,7 +136,7 @@ def test_missing_answer(faithfulness_grader: FaithfulnessGrader, basic_inputs: T
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         metrics={},
         scores=[],
         passed=False,

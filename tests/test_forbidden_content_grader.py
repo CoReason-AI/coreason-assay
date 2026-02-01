@@ -104,7 +104,7 @@ def test_forbidden_content_no_text_output() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         metrics={},
         passed=False,
     )

@@ -41,7 +41,7 @@ class MockAgentRunner(AgentRunner):
         self.last_inputs = inputs
         self.last_context = user_context
         self.last_tool_mocks = tool_mocks
-        return TestResultOutput(text=self.return_text, trace=None, structured_output={"key": "value"})
+        return TestResultOutput(error=None, text=self.return_text, trace=None, structured_output={"key": "value"})
 
 
 class RaisingAgentRunner(AgentRunner):

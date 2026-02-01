@@ -79,7 +79,7 @@ async def test_run_assay_basic_flow(
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="hello", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="hello", trace=None, structured_output=None),
         metrics={"latency_ms": 100},
         scores=[],
         passed=False,
@@ -126,7 +126,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
@@ -165,7 +165,7 @@ async def test_on_progress_passthrough(
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
@@ -204,7 +204,7 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
@@ -236,7 +236,7 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )

@@ -33,7 +33,7 @@ def test_mixed_score_types() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="Quality", value=0.5, passed=True, reasoning=None)],
             passed=True,
         ),
@@ -41,7 +41,7 @@ def test_mixed_score_types() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="Quality", value=True, passed=True, reasoning=None)],
             passed=True,
         ),
@@ -49,7 +49,7 @@ def test_mixed_score_types() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="Quality", value=0, passed=False, reasoning=None)],
             passed=False,
         ),
@@ -80,7 +80,7 @@ def test_nan_inf_handling() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             metrics={"latency_ms": 100.0},
             scores=[Score(name="Robustness", value=1.0, passed=True, reasoning=None)],
             passed=True,
@@ -89,7 +89,7 @@ def test_nan_inf_handling() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             metrics={"latency_ms": float("nan")},
             scores=[Score(name="Robustness", value=float("nan"), passed=False, reasoning="Calculated NaN")],
             passed=False,
@@ -98,7 +98,7 @@ def test_nan_inf_handling() -> None:
         TestResult(
             run_id=run.id,
             case_id=uuid4(),
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             metrics={"latency_ms": float("inf")},
             scores=[Score(name="Robustness", value=float("inf"), passed=False, reasoning="Infinite loop")],
             passed=False,
@@ -139,7 +139,7 @@ def test_large_result_set() -> None:
             TestResult(
                 run_id=run.id,
                 case_id=uuid4(),
-                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+                actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
                 metrics={"latency_ms": 10.0},  # Constant 10ms
                 scores=[Score(name="Consistency", value=1.0, passed=True, reasoning=None)],
                 passed=passed,

@@ -21,7 +21,7 @@ def mock_result() -> TestResult:
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace=None, structured_output={"key": "value"}),
+        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output={"key": "value"}),
         metrics={"latency_ms": 1000.0},
         passed=False,
     )
@@ -63,7 +63,7 @@ def test_latency_grader_missing_metric() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output=None),
         metrics={},
         passed=False,
     )
@@ -157,7 +157,7 @@ def test_json_schema_grader_no_output() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output=None),
         metrics={},
         passed=False,
     )

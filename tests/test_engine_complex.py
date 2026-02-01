@@ -50,7 +50,7 @@ def create_result(case: TestCase, run_id: Any) -> TestResult:
     return TestResult(
         run_id=run_id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="output", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="output", trace=None, structured_output=None),
         metrics={"latency_ms": 100.0},
         scores=[],
         passed=False,

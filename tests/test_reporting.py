@@ -29,7 +29,7 @@ def test_generate_report_card_basic() -> None:
     r1 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output=None),
         metrics={"latency_ms": 100.0},
         scores=[
             Score(name="Latency", value=100.0, passed=True, reasoning=None),
@@ -42,7 +42,7 @@ def test_generate_report_card_basic() -> None:
     r2 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="bar", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="bar", trace=None, structured_output=None),
         metrics={"latency_ms": 200.0},
         scores=[
             Score(name="Latency", value=200.0, passed=True, reasoning=None),
@@ -111,14 +111,14 @@ def test_generate_report_card_boolean_scores() -> None:
     r1 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[Score(name="BoolMetric", value=True, passed=True, reasoning=None)],
         passed=True,
     )
     r2 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[Score(name="BoolMetric", value=False, passed=False, reasoning=None)],
         passed=False,
     )
@@ -143,14 +143,14 @@ def test_generate_report_card_missing_latency() -> None:
     r1 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         metrics={"latency_ms": 100.0},
         passed=True,
     )
     r2 = TestResult(
         run_id=run.id,
         case_id=uuid4(),
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         metrics={},  # No latency
         passed=True,
     )

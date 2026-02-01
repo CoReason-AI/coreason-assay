@@ -47,7 +47,7 @@ class AsyncSleepAgentRunner(AgentRunner):
     ) -> TestResultOutput:
         self.call_count += 1
         await asyncio.sleep(self.delay_s)
-        return TestResultOutput(text=self.return_text, trace=None, structured_output=None)
+        return TestResultOutput(error=None, text=self.return_text, trace=None, structured_output=None)
 
 
 class FlakyAgentRunner(AgentRunner):
@@ -63,7 +63,7 @@ class FlakyAgentRunner(AgentRunner):
     ) -> TestResultOutput:
         if inputs.prompt == self.failure_trigger_prompt:
             raise RuntimeError("Intentional Crash")
-        return TestResultOutput(text="OK", trace=None, structured_output=None)
+        return TestResultOutput(error=None, text="OK", trace=None, structured_output=None)
 
 
 # --- Fixtures ---

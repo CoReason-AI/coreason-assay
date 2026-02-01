@@ -153,7 +153,7 @@ def test_simulator_runner_returns_none_fields(base_test_case: TestCase) -> None:
         async def invoke(
             self, inputs: TestCaseInput, user_context: UserContext, tool_mocks: Dict[str, Any]
         ) -> TestResultOutput:
-            return TestResultOutput(text=None, trace=None, structured_output=None)
+            return TestResultOutput(error=None, text=None, trace=None, structured_output=None)
 
     runner = NoneAgentRunner()
     simulator = Simulator(runner)

@@ -170,7 +170,7 @@ def test_agent_config_grading(complex_agent: AgentDefinition) -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="Hi", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="Hi", trace=None, structured_output=None),
         metrics={},
         scores=[],
         passed=False

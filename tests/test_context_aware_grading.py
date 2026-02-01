@@ -114,7 +114,7 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="out", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="out", trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
@@ -157,7 +157,7 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="out", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="out", trace=None, structured_output=None),
         scores=[],
         passed=False,
     )

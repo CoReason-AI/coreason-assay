@@ -82,17 +82,17 @@ class MixedBehaviorAgent(AgentRunner):
     ) -> TestResultOutput:
         mode = inputs.prompt
         if mode == "FAST_OK":
-            return TestResultOutput(text="OK", trace=None, structured_output=None)
+            return TestResultOutput(error=None, text="OK", trace=None, structured_output=None)
         elif mode == "SLOW_OK":
             await asyncio.sleep(0.2)
-            return TestResultOutput(text="OK", trace=None, structured_output=None)
+            return TestResultOutput(error=None, text="OK", trace=None, structured_output=None)
         elif mode == "FAST_FAIL":
             raise RuntimeError("Fast Crash")
         elif mode == "SLOW_FAIL":
             await asyncio.sleep(0.2)
             raise RuntimeError("Slow Crash")
         else:
-            return TestResultOutput(text="Unknown", trace=None, structured_output=None)
+            return TestResultOutput(error=None, text="Unknown", trace=None, structured_output=None)
 
 
 @pytest.mark.asyncio
@@ -277,7 +277,7 @@ def test_llm_grader_unexpected_json_schema() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="Answer", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="Answer", trace=None, structured_output=None),
         metrics={},
         scores=[],
         passed=True,

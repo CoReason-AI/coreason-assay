@@ -53,7 +53,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=True,
-                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+                actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -63,7 +63,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=False,
-                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+                actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
