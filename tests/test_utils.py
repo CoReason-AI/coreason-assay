@@ -71,13 +71,7 @@ def test_logger_mkdir_logic() -> None:
 
 
 def test_load_trace_valid() -> None:
-    trace_data = {
-        "trace_id": str(uuid4()),
-        "agent_version": "1.0",
-        "steps": [],
-        "outcome": {},
-        "metrics": {}
-    }
+    trace_data = {"trace_id": str(uuid4()), "agent_version": "1.0", "steps": [], "outcome": {}, "metrics": {}}
     json_str = json.dumps(trace_data)
     trace = load_trace(json_str)
     assert isinstance(trace, SimulationTrace)
@@ -86,16 +80,41 @@ def test_load_trace_valid() -> None:
 
 def test_load_agent_valid() -> None:
     # Minimal AgentDefinition
+    # Must match coreason-manifest schema:
+    # metadata (id: uuid, name, version, author, created_at, requires_auth)
+    # interface (inputs, outputs)
+    # config (nodes: list, edges, entry_point, model_config)
+    # dependencies (tools, libraries)
+    # integrity_hash (sha256)
     agent_data = {
-        "name": "Test Agent",
-        "version": "1.0.0",
-        "config": {
-            "system_prompt": "You are a bot.",
-            "model_config": {}
+        "metadata": {
+            "id": str(uuid4()),
+            "name": "Test Agent",
+            "version": "1.0.0",
+            "created_at": "2023-01-01T00:00:00Z",
+            "author": "me",
+            "requires_auth": False
         },
-        "integrity_hash": "hash123"
+        "interface": {
+            "inputs": {},
+            "outputs": {}
+        },
+        "config": {
+            "model_config": {
+                "model": "gpt-4",
+                "temperature": 0.0
+            },
+            "nodes": [],
+            "edges": [],
+            "entry_point": "start"
+        },
+        "dependencies": {
+            "tools": [],
+            "libraries": []
+        },
+        "integrity_hash": "a" * 64  # Valid SHA256 length
     }
     json_str = json.dumps(agent_data)
     agent = load_agent(json_str)
     assert isinstance(agent, AgentDefinition)
-    assert agent.name == "Test Agent"
+    assert agent.metadata.name == "Test Agent"
