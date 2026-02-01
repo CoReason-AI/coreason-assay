@@ -34,6 +34,7 @@ class BrokenGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Any = None,
     ) -> Score:
         raise RuntimeError("Grader exploded")
 
@@ -125,5 +126,5 @@ async def test_run_suite_callback_error_resilience(mock_engine: MagicMock) -> No
 
     # Check that bad_callback was passed to run_assay
     mock_engine.return_value.run_assay.assert_awaited_once_with(
-        corpus=corpus, agent_draft_version="v1", on_progress=bad_callback
+        corpus=corpus, agent_draft_version="v1", on_progress=bad_callback, agent=None
     )

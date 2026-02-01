@@ -21,7 +21,9 @@ def complex_mock_result() -> TestResult:
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"key": "value", "extra": "data"}),
+        actual_output=TestResultOutput(
+            error=None, text="foo", trace=None, structured_output={"key": "value", "extra": "data"}
+        ),
         metrics={"latency_ms": 1000.0},
         passed=False,
     )
@@ -74,7 +76,7 @@ def test_json_schema_grader_non_dict_output() -> None:
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="foo",
-            trace="log",
+            trace=None,
             # Output is a list
             structured_output=["item1", "item2"],
         ),
@@ -115,7 +117,7 @@ def test_json_schema_grader_array_validation() -> None:
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="list",
-            trace="log",
+            trace=None,
             structured_output=[
                 {"id": 1, "name": "A"},
                 {"id": 2, "name": "B"},
@@ -143,7 +145,9 @@ def test_json_schema_grader_pattern_validation() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"email": "invalid-email"}),
+        actual_output=TestResultOutput(
+            error=None, text="foo", trace=None, structured_output={"email": "invalid-email"}
+        ),
         metrics={},
         passed=False,
     )
@@ -166,7 +170,7 @@ def test_json_schema_grader_deep_nested_error() -> None:
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="foo",
-            trace="log",
+            trace=None,
             structured_output={
                 "level1": {
                     "level2": {
@@ -207,7 +211,7 @@ def test_json_schema_grader_nullable_fields() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="foo", trace="log", structured_output={"optional_field": None}),
+        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output={"optional_field": None}),
         metrics={},
         passed=False,
     )

@@ -44,7 +44,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=True,
-                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+                actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -54,7 +54,7 @@ def _mock_data_from_card(card: ReportCard) -> Tuple[TestRun, List[TestResult]]:
                 run_id=card.run_id,
                 case_id=uuid4(),
                 passed=False,
-                actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+                actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
                 scores=[],
             )
         )
@@ -126,7 +126,7 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             metrics={"latency_ms": 100.0},  # System Speed
             scores=[Score(name="Compliance", value=1.0, passed=True, reasoning="")],
         )
@@ -140,7 +140,7 @@ def test_drift_directionality_by_unit(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             metrics={"latency_ms": 200.0},  # Slower (Bad)
             scores=[Score(name="Compliance", value=0.5, passed=True, reasoning="")],  # Lower (Bad)
         )
@@ -172,7 +172,7 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="OldMetric", value=1.0, passed=True, reasoning="")],
         )
         for _ in range(10)
@@ -184,7 +184,7 @@ def test_drift_metric_disappearance(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[],  # OldMetric missing
         )
         for _ in range(10)
@@ -208,7 +208,7 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_1,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="Noise", value=1.0, passed=True, reasoning="")],
         )
         for _ in range(10)
@@ -221,7 +221,7 @@ def test_drift_epsilon(run_id_1: UUID, run_id_2: UUID) -> None:
             run_id=run_id_2,
             case_id=uuid4(),
             passed=True,
-            actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+            actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
             scores=[Score(name="Noise", value=1.0 - tiny_delta, passed=True, reasoning="")],
         )
         for _ in range(10)

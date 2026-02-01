@@ -40,6 +40,7 @@ class ContextSensitiveGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Any = None,
     ) -> Score:
         if inputs is None:
             return Score(name="ContextCheck", value=0.0, passed=False, reasoning="Inputs missing")
@@ -64,6 +65,7 @@ class MutatingGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Any = None,
     ) -> Score:
         if inputs:
             # Modify the context dict
@@ -81,6 +83,7 @@ class ReadingGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Any = None,
     ) -> Score:
         if inputs and inputs.context.get("mutated"):
             return Score(name="Reader", value=0.0, passed=False, reasoning="Inputs were mutated!")
@@ -111,13 +114,13 @@ async def test_context_propagation(mock_simulator: MagicMock) -> None:
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="out", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="out", trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
 
     # Simulator returns result
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -154,15 +157,15 @@ async def test_input_mutation_side_effect(mock_simulator: MagicMock) -> None:
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="out", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="out", trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
 
-    mock_simulator.run_suite.side_effect = lambda c, a, p: (run_obj, [result_obj])
+    mock_simulator.run_suite.side_effect = lambda c, a, p, ag=None: (run_obj, [result_obj])
 
     # Note: We need to trigger the callback manually or simulate it
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]

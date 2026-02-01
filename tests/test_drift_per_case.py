@@ -40,7 +40,7 @@ def make_result(case_id: UUID, passed: bool, latency: float = 100.0, score_val: 
         run_id=run_id,
         case_id=case_id,
         passed=passed,
-        actual_output=TestResultOutput(text="test", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="test", trace=None, structured_output=None),
         metrics={"latency_ms": latency},
         scores=[Score(name="TestScore", value=score_val, passed=passed, reasoning="Test reason")],
     )

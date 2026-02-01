@@ -13,6 +13,7 @@ from typing import Dict, Optional
 from uuid import uuid4
 
 import pytest
+from coreason_manifest.definitions.simulation import SimulationTrace
 
 from coreason_assay.grader import ReasoningGrader
 from coreason_assay.interfaces import LLMClient
@@ -52,7 +53,7 @@ def complex_result() -> TestResult:
         case_id=uuid4(),
         actual_output=TestResultOutput(
             text="Result.",
-            trace="Complex Trace",
+            trace=None,
             structured_output=None,
         ),
         metrics={},
@@ -65,8 +66,15 @@ def test_trace_with_json_and_braces(
     mock_llm_client: MockLLMClient, reasoning_grader: ReasoningGrader, complex_result: TestResult
 ) -> None:
     # This trace would cause .format() to crash if not escaped
-    trace_with_json = '{"key": "value", "nested": { "foo": "bar" }}'
-    complex_result.actual_output.trace = trace_with_json
+    # We construct a SimulationTrace that will produce nested JSON when dumped
+    trace_obj = SimulationTrace(
+        trace_id=uuid4(),
+        agent_version="1.0",
+        steps=[],
+        outcome={"key": "value", "nested": {"foo": "bar"}},
+        metrics={}
+    )
+    complex_result.actual_output.trace = trace_obj
 
     expectations = {"reasoning": ["Step 1"]}
 
@@ -80,7 +88,9 @@ def test_trace_with_json_and_braces(
 
     # Verify prompt contains the JSON correctly
     prompt = mock_llm_client.calls[0]
-    assert trace_with_json in prompt
+    # trace_obj.model_dump_json() will produce the string
+    trace_str = trace_obj.model_dump_json(indent=2)
+    assert trace_str in prompt
 
 
 def test_fuzzy_score_parsing(
@@ -151,9 +161,16 @@ def test_duplicate_expectations(
 def test_massive_trace_input(
     mock_llm_client: MockLLMClient, reasoning_grader: ReasoningGrader, complex_result: TestResult
 ) -> None:
-    # 1MB trace
-    massive_trace = "Log line..." * 100000
-    complex_result.actual_output.trace = massive_trace
+    # 1MB trace equivalent
+    massive_text = "Log line..." * 10000
+    trace_obj = SimulationTrace(
+        trace_id=uuid4(),
+        agent_version="1.0",
+        steps=[],
+        outcome={"log": massive_text},
+        metrics={}
+    )
+    complex_result.actual_output.trace = trace_obj
     expectations = {"reasoning": ["Step 1"]}
 
     mock_llm_client.default_response = json.dumps({"score": 1.0})

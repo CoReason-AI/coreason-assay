@@ -45,7 +45,7 @@ def test_reporting_pass_rates_and_averages() -> None:
         passed=True,
         actual_output=TestResultOutput(
             text="ok",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         metrics={"latency_ms": 100},
@@ -66,7 +66,7 @@ def test_reporting_pass_rates_and_averages() -> None:
         passed=False,
         actual_output=TestResultOutput(
             text="slow and wrong",
-            trace="trace",
+            trace=None,
             structured_output={},
         ),
         metrics={"latency_ms": 6000},

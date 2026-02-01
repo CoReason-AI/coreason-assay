@@ -41,7 +41,7 @@ class MockAgentRunner(AgentRunner):
         self.last_inputs = inputs
         self.last_context = user_context
         self.last_tool_mocks = tool_mocks
-        return TestResultOutput(text=self.return_text, trace="Mock trace", structured_output={"key": "value"})
+        return TestResultOutput(error=None, text=self.return_text, trace=None, structured_output={"key": "value"})
 
 
 class RaisingAgentRunner(AgentRunner):
@@ -89,7 +89,7 @@ def test_simulator_run_case_success(sample_test_case: TestCase) -> None:
     assert result.run_id == run_id
     assert result.case_id == sample_test_case.id
     assert result.actual_output.text == "Success Output"
-    assert result.actual_output.trace == "Mock trace"
+    assert result.actual_output.trace is None
     assert result.actual_output.structured_output == {"key": "value"}
 
     # Latency check (should be in metrics now)
@@ -110,9 +110,10 @@ def test_simulator_run_case_exception(sample_test_case: TestCase) -> None:
     assert result.run_id == run_id
     assert result.case_id == sample_test_case.id
     assert result.actual_output.text is None
-    assert result.actual_output.trace is not None
-    assert "Agent invocation failed" in result.actual_output.trace
-    assert "Simulated agent failure" in result.actual_output.trace
+    assert result.actual_output.trace is None
+    assert result.actual_output.error is not None
+    assert "Agent invocation failed" in result.actual_output.error
+    assert "Simulated agent failure" in result.actual_output.error
 
     # Latency should still be captured
     assert "latency_ms" in result.metrics

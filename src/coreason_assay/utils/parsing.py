@@ -11,6 +11,23 @@
 import json
 from typing import Any, Dict, cast
 
+from coreason_manifest.definitions.agent import AgentDefinition
+from coreason_manifest.definitions.simulation import SimulationTrace
+
+
+def load_trace(json_str: str) -> SimulationTrace:
+    """
+    Parses a SimulationTrace from a JSON string.
+    """
+    return SimulationTrace.model_validate_json(json_str)
+
+
+def load_agent(json_str: str) -> AgentDefinition:
+    """
+    Parses an AgentDefinition from a JSON string.
+    """
+    return AgentDefinition.model_validate_json(json_str)
+
 
 def parse_json_from_llm_response(response_text: str) -> Dict[str, Any]:
     """

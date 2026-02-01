@@ -8,10 +8,17 @@
 #
 # Source Code: https://github.com/CoReason-AI/coreason_assay
 
+import json
 import logging
 from unittest.mock import MagicMock, patch
+from uuid import uuid4
+
+import pytest
+from coreason_manifest.definitions.agent import AgentDefinition
+from coreason_manifest.definitions.simulation import SimulationTrace
 
 from coreason_assay.utils.logger import logger, setup_logger
+from coreason_assay.utils.parsing import load_agent, load_trace
 
 
 def test_logger_initialization() -> None:
@@ -61,3 +68,53 @@ def test_logger_mkdir_logic() -> None:
 
         # Verify handler creation
         mock_handler.assert_called_once()
+
+
+def test_load_trace_valid() -> None:
+    trace_data = {"trace_id": str(uuid4()), "agent_version": "1.0", "steps": [], "outcome": {}, "metrics": {}}
+    json_str = json.dumps(trace_data)
+    trace = load_trace(json_str)
+    assert isinstance(trace, SimulationTrace)
+    assert str(trace.trace_id) == trace_data["trace_id"]
+
+
+def test_load_agent_valid() -> None:
+    # Minimal AgentDefinition
+    # Must match coreason-manifest schema:
+    # metadata (id: uuid, name, version, author, created_at, requires_auth)
+    # interface (inputs, outputs)
+    # config (nodes: list, edges, entry_point, model_config)
+    # dependencies (tools, libraries)
+    # integrity_hash (sha256)
+    agent_data = {
+        "metadata": {
+            "id": str(uuid4()),
+            "name": "Test Agent",
+            "version": "1.0.0",
+            "created_at": "2023-01-01T00:00:00Z",
+            "author": "me",
+            "requires_auth": False
+        },
+        "interface": {
+            "inputs": {},
+            "outputs": {}
+        },
+        "config": {
+            "model_config": {
+                "model": "gpt-4",
+                "temperature": 0.0
+            },
+            "nodes": [],
+            "edges": [],
+            "entry_point": "start"
+        },
+        "dependencies": {
+            "tools": [],
+            "libraries": []
+        },
+        "integrity_hash": "a" * 64  # Valid SHA256 length
+    }
+    json_str = json.dumps(agent_data)
+    agent = load_agent(json_str)
+    assert isinstance(agent, AgentDefinition)
+    assert agent.metadata.name == "Test Agent"

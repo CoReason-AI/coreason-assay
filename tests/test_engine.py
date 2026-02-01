@@ -79,14 +79,14 @@ async def test_run_assay_basic_flow(
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="hello", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="hello", trace=None, structured_output=None),
         metrics={"latency_ms": 100},
         scores=[],
         passed=False,
     )
 
     # Configure run_suite to call the callback and return results
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -126,7 +126,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
@@ -139,7 +139,7 @@ async def test_run_assay_failure(mock_simulator: MagicMock, mock_grader: MagicMo
         reasoning="Failed",
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -165,12 +165,12 @@ async def test_on_progress_passthrough(
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -204,12 +204,12 @@ async def test_multiple_graders(mock_simulator: MagicMock, simple_corpus: TestCo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -236,12 +236,12 @@ async def test_grader_exception(mock_simulator: MagicMock, simple_corpus: TestCo
     result_obj = TestResult(
         run_id=run_obj.id,
         case_id=case.id,
-        actual_output=TestResultOutput(text=None, trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text=None, trace=None, structured_output=None),
         scores=[],
         passed=False,
     )
 
-    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any) -> Any:
+    async def side_effect(corpus: TestCorpus, agent_draft_version: str, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]

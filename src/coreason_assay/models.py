@@ -13,6 +13,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
+from coreason_manifest.definitions.agent import AgentDefinition
+from coreason_manifest.definitions.simulation import SimulationTrace
 from pydantic import BaseModel, Field
 
 
@@ -98,8 +100,9 @@ class TestResultOutput(BaseModel):
     """
 
     text: Optional[str] = Field(None, description="The final text response.")
-    trace: Optional[str] = Field(None, description="The execution trace/log.")
+    trace: Optional[SimulationTrace] = Field(None, description="The execution trace/log.")
     structured_output: Optional[Any] = Field(None, description="The structured output (if any).")
+    error: Optional[str] = Field(None, description="Error message if the execution failed.")
 
 
 class Score(BaseModel):

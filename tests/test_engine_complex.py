@@ -50,7 +50,7 @@ def create_result(case: TestCase, run_id: Any) -> TestResult:
     return TestResult(
         run_id=run_id,
         case_id=case.id,
-        actual_output=TestResultOutput(text="output", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="output", trace=None, structured_output=None),
         metrics={"latency_ms": 100.0},
         scores=[],
         passed=False,
@@ -68,7 +68,7 @@ async def test_engine_no_graders_fail_cases(mock_simulator: MagicMock) -> None:
     run_obj = TestRun(corpus_version="v1", agent_draft_version="v1", status=TestRunStatus.DONE)
     result_obj = create_result(case, run_obj.id)
 
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             await on_progress(1, 1, result_obj)
         return run_obj, [result_obj]
@@ -155,7 +155,7 @@ async def test_engine_mixed_batch_complex(mock_simulator: MagicMock) -> None:
     grader_b.grade.side_effect = grade_b
 
     # 3. Setup Simulator
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any, agent: Any = None) -> Any:
         # Simulate sequential completion
         for idx, res in enumerate(results, start=1):
             if on_progress:
@@ -213,7 +213,7 @@ async def test_engine_unknown_case_id(mock_simulator: MagicMock) -> None:
     unknown_case = TestCase(id=uuid4(), corpus_id=uuid4(), inputs=case.inputs, expectations=case.expectations)
     result_obj = create_result(unknown_case, run_obj.id)
 
-    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any) -> Any:
+    async def side_effect(corpus: Any, agent_draft_version: Any, on_progress: Any, agent: Any = None) -> Any:
         if on_progress:
             # Pass the unknown result to the callback
             await on_progress(1, 1, result_obj)

@@ -35,7 +35,7 @@ def mock_result() -> TestResult:
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(text="Placeholder", trace=None, structured_output=None),
+        actual_output=TestResultOutput(error=None, text="Placeholder", trace=None, structured_output=None),
         metrics={},
         scores=[],
         passed=False,

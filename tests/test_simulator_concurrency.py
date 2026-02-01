@@ -47,7 +47,7 @@ class AsyncSleepAgentRunner(AgentRunner):
     ) -> TestResultOutput:
         self.call_count += 1
         await asyncio.sleep(self.delay_s)
-        return TestResultOutput(text=self.return_text, trace="Slow trace", structured_output=None)
+        return TestResultOutput(error=None, text=self.return_text, trace=None, structured_output=None)
 
 
 class FlakyAgentRunner(AgentRunner):
@@ -63,7 +63,7 @@ class FlakyAgentRunner(AgentRunner):
     ) -> TestResultOutput:
         if inputs.prompt == self.failure_trigger_prompt:
             raise RuntimeError("Intentional Crash")
-        return TestResultOutput(text="OK", trace="OK Trace", structured_output=None)
+        return TestResultOutput(error=None, text="OK", trace=None, structured_output=None)
 
 
 # --- Fixtures ---
@@ -175,8 +175,8 @@ async def test_run_suite_failsafe_execution(basic_corpus: TestCorpus) -> None:
     success_result = next(r for r in results if r.case_id == basic_corpus.cases[0].id)
 
     assert failing_result.passed is False
-    assert failing_result.actual_output.trace is not None
-    assert "Intentional Crash" in failing_result.actual_output.trace
+    assert failing_result.actual_output.error is not None
+    assert "Intentional Crash" in failing_result.actual_output.error
 
     assert success_result.actual_output.text == "OK"
 
@@ -242,6 +242,6 @@ async def test_run_suite_critical_task_failure(basic_corpus: TestCorpus, mocker:
 
     for result in results:
         assert result.passed is False
-        assert result.actual_output.trace is not None
-        assert "System Error" in result.actual_output.trace
-        assert "Catastrophic Failure" in result.actual_output.trace
+        assert result.actual_output.error is not None
+        assert "System Error" in result.actual_output.error
+        assert "Catastrophic Failure" in result.actual_output.error
