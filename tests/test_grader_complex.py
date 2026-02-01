@@ -21,7 +21,9 @@ def complex_mock_result() -> TestResult:
     return TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output={"key": "value", "extra": "data"}),
+        actual_output=TestResultOutput(
+            error=None, text="foo", trace=None, structured_output={"key": "value", "extra": "data"}
+        ),
         metrics={"latency_ms": 1000.0},
         passed=False,
     )
@@ -143,7 +145,9 @@ def test_json_schema_grader_pattern_validation() -> None:
     result = TestResult(
         run_id=uuid4(),
         case_id=uuid4(),
-        actual_output=TestResultOutput(error=None, text="foo", trace=None, structured_output={"email": "invalid-email"}),
+        actual_output=TestResultOutput(
+            error=None, text="foo", trace=None, structured_output={"email": "invalid-email"}
+        ),
         metrics={},
         passed=False,
     )

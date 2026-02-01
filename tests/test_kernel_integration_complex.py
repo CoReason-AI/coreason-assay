@@ -155,7 +155,9 @@ def test_complex_trace_reasoning(complex_trace: SimulationTrace) -> None:
     prompt = llm_client.last_prompt
     assert "SELECT * FROM users" in prompt
     assert "5 users found" in prompt
-    assert "token_usage" not in prompt # 'tokens_used' is in metrics, logic might not include root metrics in prompt trace dump?
+    assert (
+        "token_usage" not in prompt
+    )  # 'tokens_used' is in metrics, logic might not include root metrics in prompt trace dump?
     # ReasoningGrader uses `trace_obj.model_dump_json(indent=2)`.
     # SimulationTrace includes metrics. So metrics SHOULD be in the prompt.
     assert "tokens_used" in prompt

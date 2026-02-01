@@ -34,6 +34,7 @@ class BrokenGrader(BaseGrader):
         result: TestResult,
         inputs: Optional[TestCaseInput] = None,
         expectations: Optional[Dict[str, Any]] = None,
+        agent: Any = None,
     ) -> Score:
         raise RuntimeError("Grader exploded")
 
